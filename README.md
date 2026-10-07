@@ -10,6 +10,7 @@
 - Ownership, the borrow checker, and references
 - Lifetimes
 - Control flow
+- Macros
 - Structs and enums
 - Iterators and closures
 - Generics, traits, and trait implementations

@@ -1,2 +1,63 @@
+# ctags
 tags
 
+# Rust build output
+target/
+**/*.rs.bk
+
+# IDEs and editors
+.idea/
+.vscode/
+.vs/
+.fleet/
+.zed/
+.nova/
+.history/
+.settings/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+Session.vim
+.netrwhist
+*~
+.#*
+\#*\#
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local environment
+.env
+.envrc
+.direnv/
+.cache/
+
+# AI coding assistants
+.claude/
+.cursor/
+.cursorrules
+.windsurf/
+.windsurfrules
+.codeium/
+.gemini/
+.codex/
+.continue/
+.cline/
+.clinerules
+.roo/
+.roomodes
+.kilocode/
+.kiro/
+.amazonq/
+.junie/
+.opencode/
+.qwen/
+.trae/
+.augment/
+.aider*
+.github/copilot-instructions.md
+.github/instructions/
+.github/prompts/

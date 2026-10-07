@@ -1,0 +1,1531 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data structures and compound types</title>
+<link rel="stylesheet" href="assets/deck.css">
+</head>
+<body>
+<div class="viewport">
+<div class="deck" id="deck">
+
+<div class="slides" data-lang="en">
+
+<section class="slide title-slide">
+  <div class="chapter">Chapter 5</div>
+  <h1>Data structures and compound types</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Collections, tuples, arrays, slices, structs, enums, iterators and closures</div>
+</section>
+
+<section class="slide">
+  <h2>In this chapter</h2>
+  <ol>
+    <li><strong>Tuples, arrays and slices</strong>: destructuring, borrowing part of a collection</li>
+    <li><strong>Collections</strong>: <code>Vec</code>, <code>String</code>, <code>HashMap</code>, iterators and closures</li>
+    <li><strong>Structs</strong>: fields, methods, lifetimes in structs</li>
+    <li><strong>Enums and <code>Option</code></strong>: variants, <code>match</code>, <code>if let</code></li>
+  </ol>
+  <p class="note">Code for this chapter: <code>005-data-structures-types/</code></p>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 1</div>
+  <h1>Tuples, arrays and slices</h1>
+  <div class="bar"></div>
+</section>
+
+<section class="slide">
+  <h2>Destructuring</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">let person = ("Alice", 30, 1.68);
+let (name, age, _) = person;
+println!("{name} is {age}");
+
+let (smallest, largest) = min_max(9, 4);
+println!("{smallest} {largest}");
+
+fn min_max(first: i32, second: i32) -> (i32, i32) {
+    if first &lt; second {
+        (first, second)
+    } else {
+        (second, first)
+    }
+}</code></pre>
+    </div>
+    <div>
+      <span class="label">Output</span>
+      <pre class="small output"><code>Alice is 30
+4 9</code></pre>
+      <ul class="compact">
+        <li>A pattern on the left of <code>let</code> unpacks a tuple into variables.</li>
+        <li><code>_</code> skips a field you don't need.</li>
+        <li>The pattern must have exactly as many fields as the tuple (E0308 otherwise).</li>
+        <li>Returning a tuple is how a function returns several values.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Slices</h2>
+  <div class="columns">
+    <div>
+      <pre class="small"><code class="lang-rust">let primes = [2, 3, 5, 7, 11];
+let middle = &amp;primes[1..4];
+println!("{middle:?} {}", middle.len());</code></pre>
+      <span class="label">Output</span>
+      <pre class="small output"><code>[3, 5, 7] 3</code></pre>
+      <ul class="compact">
+        <li>A <strong>slice</strong> borrows a run of neighboring elements without copying them.</li>
+        <li>It stores a pointer to the first element and a length.</li>
+        <li>Its type is <code>&amp;[i32]</code>. Ranges: <code>[1..4]</code>, <code>[..2]</code>, <code>[3..]</code>, <code>[..]</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <svg class="diagram" viewBox="0 0 520 240" role="img" aria-label="middle points to the second element of primes and has length 3"><text x="0" y="10" class="caption">STACK</text><text x="0" y="34" class="name">primes: [i32; 5]</text><text x="30.0" y="56" class="caption" text-anchor="middle">0</text><text x="90.0" y="56" class="caption" text-anchor="middle">1</text><text x="150.0" y="56" class="caption" text-anchor="middle">2</text><text x="210.0" y="56" class="caption" text-anchor="middle">3</text><text x="270.0" y="56" class="caption" text-anchor="middle">4</text><g><rect x="0" y="66" width="60" height="40" class="cell"/><text x="30.0" y="86.0" text-anchor="middle">2</text><rect x="60" y="66" width="60" height="40" class="heap-cell"/><text x="90.0" y="86.0" text-anchor="middle">3</text><rect x="120" y="66" width="60" height="40" class="heap-cell"/><text x="150.0" y="86.0" text-anchor="middle">5</text><rect x="180" y="66" width="60" height="40" class="heap-cell"/><text x="210.0" y="86.0" text-anchor="middle">7</text><rect x="240" y="66" width="60" height="40" class="cell"/><text x="270.0" y="86.0" text-anchor="middle">11</text></g><text x="144.0" y="185.0" class="name">middle: &amp;[i32]</text><rect x="0.0" y="170" width="50" height="30" class="cell"/><rect x="50.0" y="170" width="80" height="30" class="cell"/><text x="10.0" y="185.0">ptr</text><circle cx="90.0" cy="185.0" r="5" class="dot"/><rect x="0.0" y="200" width="50" height="30" class="cell"/><rect x="50.0" y="200" width="80" height="30" class="cell"/><text x="10.0" y="215.0">len</text><text x="62.0" y="215.0">3</text><g><path d="M90.0,185.0 C90.0,165.0 90.0,128 90.0,120.0" class="link"/><polygon points="90.0,108 84.0,120.0 96.0,120.0" class="link-head"/></g></svg>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Slices as parameters</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">fn sum(numbers: &amp;[i32]) -> i32 {
+    let mut total = 0;
+    for number in numbers {
+        total += number;
+    }
+    total
+}
+
+println!("{}", sum(&amp;primes));
+println!("{}", sum(&amp;primes[..2]));</code></pre>
+    </div>
+    <div>
+      <span class="label">Output</span>
+      <pre class="small output"><code>28
+5</code></pre>
+      <ul class="compact">
+        <li>A <code>&amp;[i32]</code> parameter accepts a whole array, a part of it, or a <code>Vec</code>.</li>
+        <li>A range outside the data panics:</li>
+      </ul>
+      <pre class="tiny output"><code>range end index 10 out of range
+for slice of length 5</code></pre>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>String slices</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let text = String::from("hello world");
+let hello = &amp;text[0..5];
+let world = &amp;text[6..];
+println!("{hello} | {world}");</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>hello | world</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>&amp;str</code> is a <strong>string slice</strong>: a pointer and a length into some text.</li>
+        <li>A string literal is a slice of text stored in the program binary (chapter 3).</li>
+        <li>The range counts <strong>bytes</strong>, not characters. More in part 2.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 2</div>
+  <h1>Collections</h1>
+  <div class="bar"></div>
+  <div class="subtitle"><code>Vec</code>, <code>String</code>, <code>HashMap</code>, iterators and closures</div>
+</section>
+
+<section class="slide">
+  <h2><code>Vec</code>: a growable list</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">let mut scores = Vec::new();
+for round in 1..=3 {
+    scores.push(round * 10);
+}
+let mut letters = vec!['a', 'b', 'c'];
+let last = letters.pop();
+println!("{scores:?} {letters:?} {last:?}");</code></pre>
+      <span class="label">Output</span>
+      <pre class="small output"><code>[10, 20, 30] ['a', 'b'] Some('c')</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>Vec&lt;T&gt;</code> keeps its elements on the heap, like <code>String</code>: pointer, length, capacity.</li>
+        <li>Read <code>&lt;T&gt;</code> as "of type T": <code>Vec&lt;i32&gt;</code>. Generics are covered in chapter 6.</li>
+        <li><code>vec![…]</code> creates a <code>Vec</code> with elements. <code>push</code> and <code>pop</code> need <code>mut</code>.</li>
+        <li><code>pop</code> returns an <code>Option</code>, because the <code>Vec</code> may be empty (part 4).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Reading elements</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">println!("{}", scores[1]);
+println!("{:?}", scores.get(1));
+println!("{:?}", scores.get(10));</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>20
+Some(20)
+None</code></pre>
+      <span class="label command">scores[10]</span>
+      <pre class="tiny output"><code>index out of bounds: the len is 3 but the index is 10</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>[index]</code> panics when the index is too big.</li>
+        <li><code>.get(index)</code> never panics. It returns <code>Some(value)</code> or <code>None</code>.</li>
+        <li>Use <code>[ ]</code> when the index is surely valid, and <code>.get()</code> when it might not be.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Iterating and changing elements</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">for score in &amp;scores {
+    print!("{score} ");
+}
+for score in &amp;mut scores {
+    *score += 1;
+}
+println!("{scores:?}");</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>10 20 30 [11, 21, 31]</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>for score in &amp;scores</code> borrows each element to read it.</li>
+        <li><code>&amp;mut scores</code> borrows each element to change it.</li>
+        <li><code>*score</code> <strong>dereferences</strong>: it means the value the reference points to.</li>
+        <li><code>for score in scores</code>, without <code>&amp;</code>, moves the <code>Vec</code> into the loop, and it can't be used afterwards.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>A <code>Vec</code> and the borrowing rule</h2>
+  <pre class="small"><code class="lang-error">error[E0502]: cannot borrow `numbers` as mutable because it is also borrowed as immutable
+ --> src/main.rs:4:5
+  |
+3 |     let first = &amp;numbers[0];
+  |                  ------- immutable borrow occurs here
+4 |     numbers.push(4);
+  |     ^^^^^^^^^^^^^^^ mutable borrow occurs here
+5 |     println!("{first}");
+  |                ----- immutable borrow later used here</code></pre>
+  <ul>
+    <li><code>first</code> borrows an element, and <code>push</code> needs to change the whole <code>Vec</code>.</li>
+    <li>It's the borrowing rule from chapter 3. The next slide shows why it matters here.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Why: <code>push</code> can move the data</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <svg class="diagram" viewBox="0 0 560 260" role="img" aria-label="after push, numbers points to a new buffer and first still points to the freed old buffer"><text x="0" y="10" class="caption">STACK</text><text x="310" y="10" class="caption">HEAP</text><text x="310" y="48" class="caption">NEW BUFFER</text><g><rect x="310" y="60" width="40" height="40" class="heap-cell"/><text x="330.0" y="80.0" text-anchor="middle">1</text><rect x="350" y="60" width="40" height="40" class="heap-cell"/><text x="370.0" y="80.0" text-anchor="middle">2</text><rect x="390" y="60" width="40" height="40" class="heap-cell"/><text x="410.0" y="80.0" text-anchor="middle">3</text><rect x="430" y="60" width="40" height="40" class="heap-cell"/><text x="450.0" y="80.0" text-anchor="middle">4</text><rect x="470" y="60" width="40" height="40" class="heap-cell"/><text x="490.0" y="80.0" text-anchor="middle"></text><rect x="510" y="60" width="40" height="40" class="heap-cell"/><text x="530.0" y="80.0" text-anchor="middle"></text></g><g class="faded"><text x="310" y="188" class="caption">OLD BUFFER, FREED</text><g><rect x="310" y="200" width="40" height="40" class="heap-cell"/><text x="330.0" y="220.0" text-anchor="middle">1</text><rect x="350" y="200" width="40" height="40" class="heap-cell"/><text x="370.0" y="220.0" text-anchor="middle">2</text><rect x="390" y="200" width="40" height="40" class="heap-cell"/><text x="410.0" y="220.0" text-anchor="middle">3</text></g></g><g><rect x="0" y="28" width="230" height="30" class="head"/><text x="12" y="43.0" class="name">numbers: Vec&lt;i32&gt;</text><rect x="0" y="58" width="120" height="30" class="cell"/><rect x="120" y="58" width="110" height="30" class="cell"/><text x="12" y="73.0">ptr</text><circle cx="175.0" cy="73.0" r="5" class="dot"/><rect x="0" y="88" width="120" height="30" class="cell"/><rect x="120" y="88" width="110" height="30" class="cell"/><text x="12" y="103.0">len</text><text x="132" y="103.0">4</text><rect x="0" y="118" width="120" height="30" class="cell"/><rect x="120" y="118" width="110" height="30" class="cell"/><text x="12" y="133.0">capacity</text><text x="132" y="133.0">6</text></g><g><rect x="0" y="190" width="230" height="30" class="head"/><text x="12" y="205.0" class="name">first: &amp;i32</text><rect x="0" y="220" width="120" height="30" class="cell"/><rect x="120" y="220" width="110" height="30" class="cell"/><text x="12" y="235.0">ptr</text><circle cx="175.0" cy="235.0" r="5" class="dot"/></g><g><path d="M175.0,73.0 C245.0,73.0 260,80 298.0,80.0" class="link"/><polygon points="310,80 298.0,74.0 298.0,86.0" class="link-head"/></g><g><path d="M175.0,235.0 C245.0,235.0 260,220 298.0,220.0" class="link dashed"/><polygon points="310,220 298.0,214.0 298.0,226.0" class="link-head"/></g></svg>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>vec![1, 2, 3]</code> has room for exactly 3 elements.</li>
+        <li><code>push(4)</code> allocates a bigger buffer (capacity 6), copies the elements and frees the old one.</li>
+        <li><code>first</code> would still point to the freed memory. The borrow checker rejects this at compile time.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>String</code> in depth</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let mut greeting = String::from("Hello");
+greeting.push(',');
+greeting.push_str(" world");
+let full = format!("{greeting}!");
+println!("{full}");</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>Hello, world!</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>A <code>String</code> is a growable list of bytes that always holds valid UTF-8 text.</li>
+        <li><code>push</code> adds one <code>char</code>, and <code>push_str</code> adds a <code>&amp;str</code>.</li>
+        <li><code>format!</code> builds a new <code>String</code> from several pieces.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Bytes and characters</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">let word = "zażółć";
+println!("{} {}", word.len(), word.chars().count());</code></pre>
+      <span class="label">Output</span>
+      <pre class="small output"><code>10 6</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>In UTF-8 a character takes 1 to 4 bytes. <code>ż</code>, <code>ó</code>, <code>ł</code>, <code>ć</code> take 2 each.</li>
+        <li><code>.len()</code> counts bytes, and <code>.chars()</code> walks the characters.</li>
+        <li>A byte position isn't necessarily a character, so strings can't be indexed.</li>
+      </ul>
+    </div>
+  </div>
+  <span class="label command">word[0]</span>
+  <pre class="tiny"><code class="lang-error">error[E0277]: the type `str` cannot be indexed by `{integer}`</code></pre>
+  <span class="label command">&amp;word[0..3]</span>
+  <pre class="tiny output"><code>byte index 3 is not a char boundary; it is inside 'ż' (bytes 2..4) of `zażółć`</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Closures</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let double = |x| x * 2;
+let add = |a: i32, b: i32| a + b;
+let offset = 10;
+let shift = |x| x + offset;
+println!("{} {} {}", double(4), add(2, 3), shift(1));</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>8 5 11</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>A <strong>closure</strong> is a function without a name: parameters between <code>| |</code>, then the body.</li>
+        <li>Parameter and return types are usually inferred.</li>
+        <li>A closure can use variables from around it, like <code>offset</code>.</li>
+        <li>You'll mostly pass closures to iterator methods.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Iterators</h2>
+  <pre class="small"><code class="lang-rust">let numbers = [1, 2, 3, 4];
+let doubled: Vec&lt;i32&gt; = numbers.iter().map(|n| n * 2).collect();
+let total: i32 = numbers.iter().sum();
+let words = ["apple", "fig", "banana"];
+let long_count = words.iter().filter(|word| word.len() &gt; 3).count();
+for (index, word) in words.iter().enumerate() {
+    println!("{index}: {word}");
+}</code></pre>
+  <div class="columns">
+    <div>
+      <span class="label">Values and output</span>
+      <pre class="small output"><code>doubled: [2, 4, 6, 8]  total: 10
+long_count: 2
+0: apple  1: fig  2: banana</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>.iter()</code> borrows each element, and <code>.iter_mut()</code> borrows it mutably.</li>
+        <li><strong>Adapters</strong> (<code>.map()</code>, <code>.filter()</code>, <code>.enumerate()</code>) build a new iterator. <strong>Consumers</strong> (<code>.sum()</code>, <code>.count()</code>, <code>.collect()</code>, <code>for</code>) run it.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Iterators are lazy</h2>
+  <span class="label">Without a consumer</span>
+  <pre class="tiny"><code class="lang-error">warning: unused `Map` that must be used
+ --> src/main.rs:3:5
+  |
+3 |     numbers.iter().map(|n| n * 2);
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: iterators are lazy and do nothing unless consumed</code></pre>
+  <span class="label">collect without a type</span>
+  <pre class="tiny"><code class="lang-error">error[E0283]: type annotations needed
+ --> src/main.rs:3:9
+  |
+3 |     let doubled = numbers.iter().map(|n| n * 2).collect();
+  |         ^^^^^^^                                 ------- type must be known at this point</code></pre>
+  <p><code>.collect()</code> needs to know which collection to build: <code>let doubled: Vec&lt;_&gt;</code>. The <code>_</code> lets the compiler fill in the element type.</p>
+</section>
+
+<section class="slide">
+  <h2><code>HashMap</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">use std::collections::HashMap;
+
+let mut ages = HashMap::new();
+ages.insert("Alice", 30);
+ages.insert("Bob", 25);
+println!("{:?}", ages.get("Alice"));
+println!("{:?}", ages.get("Carol"));</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>Some(30)
+None</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>A <code>HashMap&lt;K, V&gt;</code> stores values under keys.</li>
+        <li><code>use</code> brings it into scope from the standard library.</li>
+        <li><code>insert</code> adds a value, or replaces the old one for that key.</li>
+        <li><code>get</code> returns an <code>Option</code>, and <code>ages["Carol"]</code> panics: <em>no entry found for key</em>.</li>
+        <li>Iterating goes in no particular order.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Counting with <code>entry</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let sentence = "the cat and the hat";
+let mut counts = HashMap::new();
+for word in sentence.split_whitespace() {
+    let count = counts.entry(word).or_insert(0);
+    *count += 1;
+}
+println!("{}", counts["the"]);</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>2</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>entry(word)</code> finds the place for a key.</li>
+        <li><code>.or_insert(0)</code> puts <code>0</code> there if the key is new, and returns a mutable reference to the value.</li>
+        <li><code>*count += 1</code> changes the value through that reference, like <code>*score</code> before.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 3</div>
+  <h1>Structs</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Named fields that belong together</div>
+</section>
+
+<section class="slide">
+  <h2>Defining a struct</h2>
+  <div class="columns">
+    <div>
+      <pre class="small"><code class="lang-rust">struct User {
+    name: String,
+    age: u32,
+    active: bool,
+}
+
+let user = User {
+    name: String::from("Alice"),
+    age: 30,
+    active: true,
+};
+println!("{} {}", user.name, user.age);</code></pre>
+    </div>
+    <div>
+      <svg class="diagram" viewBox="0 0 520 220" role="img" aria-label="the user struct keeps the name pointer, length and capacity, age and active on the stack; the name text is on the heap"><text x="0" y="10" class="caption">STACK</text><text x="330" y="10" class="caption">HEAP</text><g><rect x="0" y="28" width="230" height="30" class="head"/><text x="12" y="43.0" class="name">user: User</text><rect x="0" y="58" width="150" height="30" class="cell"/><rect x="150" y="58" width="80" height="30" class="cell"/><text x="12" y="73.0">name.ptr</text><circle cx="190.0" cy="73.0" r="5" class="dot"/><rect x="0" y="88" width="150" height="30" class="cell"/><rect x="150" y="88" width="80" height="30" class="cell"/><text x="12" y="103.0">name.len</text><text x="162" y="103.0">5</text><rect x="0" y="118" width="150" height="30" class="cell"/><rect x="150" y="118" width="80" height="30" class="cell"/><text x="12" y="133.0">name.capacity</text><text x="162" y="133.0">5</text><rect x="0" y="148" width="150" height="30" class="cell"/><rect x="150" y="148" width="80" height="30" class="cell"/><text x="12" y="163.0">age</text><text x="162" y="163.0">30</text><rect x="0" y="178" width="150" height="30" class="cell"/><rect x="150" y="178" width="80" height="30" class="cell"/><text x="12" y="193.0">active</text><text x="162" y="193.0">true</text></g><g><rect x="330" y="53.0" width="36" height="40" class="heap-cell"/><text x="348.0" y="73.0" text-anchor="middle">A</text><rect x="366" y="53.0" width="36" height="40" class="heap-cell"/><text x="384.0" y="73.0" text-anchor="middle">l</text><rect x="402" y="53.0" width="36" height="40" class="heap-cell"/><text x="420.0" y="73.0" text-anchor="middle">i</text><rect x="438" y="53.0" width="36" height="40" class="heap-cell"/><text x="456.0" y="73.0" text-anchor="middle">c</text><rect x="474" y="53.0" width="36" height="40" class="heap-cell"/><text x="492.0" y="73.0" text-anchor="middle">e</text></g><g><path d="M190.0,73.0 C250.0,73.0 280,73.0 318.0,73.0" class="link"/><polygon points="330,73.0 318.0,67.0 318.0,79.0" class="link-head"/></g></svg>
+      <ul class="compact">
+        <li>A struct names its fields and their types. An instance must set every field.</li>
+        <li>Fields are read with <code>.name</code>.</li>
+        <li>The struct owns its fields, and they're dropped together with it.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Changing and building structs</h2>
+  <div class="columns">
+    <div>
+      <pre class="small"><code class="lang-rust">let mut user = User {
+    name: String::from("Alice"),
+    age: 30,
+    active: true,
+};
+user.age += 1;</code></pre>
+      <ul class="compact">
+        <li>The whole instance is <code>mut</code> or not. Single fields can't be.</li>
+        <li>Without <code>mut</code>: <em>E0594 cannot assign to <code>user.age</code>, as <code>user</code> is not declared as mutable</em>.</li>
+      </ul>
+    </div>
+    <div>
+      <pre class="small"><code class="lang-rust">fn new_user(name: String, age: u32) -> User {
+    User {
+        name,
+        age,
+        active: true,
+    }
+}</code></pre>
+      <ul class="compact">
+        <li><strong>Field init shorthand</strong>: <code>name</code> instead of <code>name: name</code>, when a variable has the field's name.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Printing a struct</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">#[derive(Debug)]
+struct User {
+    name: String,
+    age: u32,
+    active: bool,
+}
+
+println!("{user:?}");
+println!("{user:#?}");</code></pre>
+    </div>
+    <div>
+      <span class="label">Output</span>
+      <pre class="tiny output"><code>User { name: "Alice", age: 30, active: true }
+User {
+    name: "Alice",
+    age: 30,
+    active: true,
+}</code></pre>
+      <ul class="compact">
+        <li><code>#[derive(Debug)]</code> generates the code that makes <code>{:?}</code> work for your type.</li>
+        <li>Without it: <em>E0277 <code>User</code> doesn't implement <code>Debug</code></em>. The compiler suggests adding the line.</li>
+        <li>How <code>derive</code> works is covered with traits in chapter 6.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Tuple structs</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">struct Meters(f64);
+struct Seconds(f64);
+
+let distance = Meters(5.0);
+let time = Seconds(2.0);
+println!("{}", distance.0 / time.0);</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>2.5</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>A <strong>tuple struct</strong> has a name, but its fields don't: <code>.0</code>, <code>.1</code>.</li>
+        <li><code>Meters</code> and <code>Seconds</code> are different types, so you can't pass one where the other is expected, even though both hold an <code>f64</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Methods</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">impl User {
+    fn greeting(&amp;self) -> String {
+        format!("Hi, I'm {}", self.name)
+    }
+
+    fn birthday(&amp;mut self) {
+        self.age += 1;
+    }
+}
+
+let mut user = User::new("Alice", 30);
+user.birthday();
+println!("{} ({})", user.greeting(), user.age);</code></pre>
+    </div>
+    <div>
+      <span class="label">Output</span>
+      <pre class="small output"><code>Hi, I'm Alice (31)</code></pre>
+      <ul class="compact">
+        <li>An <code>impl</code> block adds functions to a type.</li>
+        <li>A <strong>method</strong> takes <code>self</code> first, and you call it with a dot: <code>user.birthday()</code>.</li>
+        <li><code>&amp;self</code> borrows to read, and <code>&amp;mut self</code> borrows to change, as in chapter 3.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Associated functions and <code>self</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">impl User {
+    fn new(name: &amp;str, age: u32) -> Self {
+        Self {
+            name: String::from(name),
+            age,
+            active: true,
+        }
+    }
+
+    fn into_name(self) -> String {
+        self.name
+    }
+}</code></pre>
+    </div>
+    <div>
+      <table class="compact">
+        <tr><th>First parameter</th><th>Meaning</th></tr>
+        <tr><td><code>&amp;self</code></td><td>Borrows to read</td></tr>
+        <tr><td><code>&amp;mut self</code></td><td>Borrows to change</td></tr>
+        <tr><td><code>self</code></td><td>Takes ownership. The instance is used up.</td></tr>
+        <tr><td>none</td><td>Associated function, called as <code>User::new(…)</code></td></tr>
+      </table>
+      <p class="aside spaced"><code>Self</code> means the type of the <code>impl</code> block, here <code>User</code>. <code>new</code> is the usual name for a constructor.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Lifetimes in structs</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">struct Excerpt&lt;'a&gt; {
+    text: &amp;'a str,
+}
+
+let novel = String::from("Call me Ishmael. Some years ago...");
+let first_sentence = &amp;novel[..16];
+let excerpt = Excerpt { text: first_sentence };
+println!("{}", excerpt.text);</code></pre>
+      <span class="label">Without a lifetime</span>
+      <pre class="tiny"><code class="lang-error">error[E0106]: missing lifetime specifier
+ --> src/main.rs:2:11
+  |
+2 |     text: &amp;str,
+  |           ^ expected named lifetime parameter</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>A struct that holds a reference needs a lifetime, completing chapter 3.</li>
+        <li><code>Excerpt&lt;'a&gt;</code> says: an excerpt can't outlive the text it borrows.</li>
+        <li>Prefer owned fields (<code>String</code>) unless you have a reason to borrow.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 4</div>
+  <h1>Enums and <code>Option</code></h1>
+  <div class="bar"></div>
+  <div class="subtitle">A value that is one of several variants</div>
+</section>
+
+<section class="slide">
+  <h2>Enums</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">enum Shape {
+    Circle(f64),
+    Rectangle(f64, f64),
+    Empty,
+}
+
+impl Shape {
+    fn area(&amp;self) -> f64 {
+        match self {
+            Shape::Circle(radius) =&gt; PI * radius * radius,
+            Shape::Rectangle(width, height) =&gt; width * height,
+            Shape::Empty =&gt; 0.0,
+        }
+    }
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>An <strong>enum</strong> value is exactly one of its variants.</li>
+        <li>A variant can carry data, like <code>Circle(f64)</code>, or none, like <code>Empty</code>.</li>
+        <li><code>match</code> picks the variant and takes its data out into variables.</li>
+        <li>Enums can have methods too.</li>
+      </ul>
+      <p class="aside"><code>PI</code> is <code>std::f64::consts::PI</code>.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>match</code> must cover every variant</h2>
+  <pre class="tiny"><code class="lang-error">error[E0004]: non-exhaustive patterns: `&amp;Shape::Empty` not covered
+ --> src/main.rs:8:11
+  |
+8 |     match shape {
+  |           ^^^^^ pattern `&amp;Shape::Empty` not covered
+  |
+note: `Shape` defined here
+ --> src/main.rs:1:6
+  |
+1 | enum Shape {
+  |      ^^^^^
+...
+4 |     Empty,
+  |     ----- not covered</code></pre>
+  <ul>
+    <li>The compiler names the exact variant that's missing.</li>
+    <li>Add a variant to an enum, and every <code>match</code> that forgets it stops compiling.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2><code>Option</code>: a value or nothing</h2>
+  <div class="columns">
+    <div>
+      <pre class="small"><code class="lang-rust">enum Option&lt;T&gt; {
+    None,
+    Some(T),
+}</code></pre>
+      <ul class="compact">
+        <li>Rust has no <code>null</code>. A value that may be missing has the type <code>Option</code>.</li>
+        <li>You've already met it: <code>checked_add</code> (chapter 2), <code>Vec::get</code>, <code>pop</code>, <code>HashMap::get</code>.</li>
+        <li>An <code>Option&lt;i32&gt;</code> isn't an <code>i32</code>. You have to handle <code>None</code> before using the value.</li>
+      </ul>
+    </div>
+    <div>
+      <pre class="small"><code class="lang-rust">let values = [10, 20, 30];
+match values.get(5) {
+    Some(value) =&gt; println!("found {value}"),
+    None =&gt; println!("nothing there"),
+}</code></pre>
+      <span class="label">Output</span>
+      <pre class="small output"><code>nothing there</code></pre>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>if let</code> and helpers</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">if let Some(first) = values.first() {
+    println!("first: {first}");
+}
+let bonus = 250_u8.checked_add(10).unwrap_or(0);
+let fallback = letters.pop().unwrap_or('?');</code></pre>
+      <span class="label">Output and values</span>
+      <pre class="small output"><code>first: 10
+bonus: 0  fallback: 'b'</code></pre>
+      <span class="label command">values.get(5).unwrap()</span>
+      <pre class="tiny output"><code>called `Option::unwrap()` on a `None` value</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>if let</code> handles one variant and ignores the rest.</li>
+        <li><code>.unwrap_or(default)</code> gives the value, or the default for <code>None</code>.</li>
+        <li><code>.unwrap()</code> gives the value or panics. Use it only when <code>None</code> really can't happen.</li>
+      </ul>
+      <p class="aside"><code>Result</code>, for operations that can fail, is covered in chapter 6.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Choosing a data structure</h2>
+  <table>
+    <tr><th>Type</th><th>Use it for</th><th>Example</th></tr>
+    <tr><td>Tuple</td><td>A few values of different types, by position</td><td>Returning <code>(smallest, largest)</code></td></tr>
+    <tr><td>Array</td><td>A fixed number of values of one type</td><td><code>[i32; 5]</code></td></tr>
+    <tr><td>Slice</td><td>Borrowing part of an array, <code>Vec</code> or text</td><td>Parameters <code>&amp;[T]</code>, <code>&amp;str</code></td></tr>
+    <tr><td><code>Vec</code>, <code>String</code></td><td>Lists and text that grow</td><td>Scores, user input</td></tr>
+    <tr><td><code>HashMap</code></td><td>Looking values up by key</td><td>Word counts</td></tr>
+    <tr><td>Struct</td><td>Named fields that belong together</td><td>A user</td></tr>
+    <tr><td>Enum</td><td>A value that is one of several variants</td><td>A shape, <code>Option</code></td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2>Summary</h2>
+  <ul>
+    <li>Destructuring unpacks tuples. Slices borrow part of an array, a <code>Vec</code> or a string.</li>
+    <li><code>Vec</code>, <code>String</code> and <code>HashMap</code> grow on the heap and follow the borrowing rules.</li>
+    <li>A <code>String</code> is UTF-8: <code>.len()</code> counts bytes, and indexing isn't allowed.</li>
+    <li>Closures and iterator adapters process collections. Nothing happens until a consumer runs.</li>
+    <li>Structs group named fields. <code>impl</code> adds methods with <code>&amp;self</code>, <code>&amp;mut self</code> or <code>self</code>.</li>
+    <li>Enums hold one of several variants. <code>Option</code> replaces <code>null</code>, and <code>match</code> must cover every case.</li>
+  </ul>
+  <p class="note">Next: chapter 6, advanced concepts and testing.</p>
+</section>
+
+</div>
+
+<div class="slides" data-lang="pl">
+
+<section class="slide title-slide">
+  <div class="chapter">Rozdział 5</div>
+  <h1>Struktury danych i typy złożone</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Kolekcje, krotki, tablice, wycinki, struktury, enumy, iteratory i domknięcia</div>
+</section>
+
+<section class="slide">
+  <h2>W tym rozdziale</h2>
+  <ol>
+    <li><strong>Krotki, tablice i wycinki</strong>: destrukturyzacja, pożyczanie fragmentu kolekcji</li>
+    <li><strong>Kolekcje</strong>: <code>Vec</code>, <code>String</code>, <code>HashMap</code>, iteratory i domknięcia</li>
+    <li><strong>Struktury</strong>: pola, metody, czasy życia w strukturach</li>
+    <li><strong>Enumy i <code>Option</code></strong>: warianty, <code>match</code>, <code>if let</code></li>
+  </ol>
+  <p class="note">Kod do tego rozdziału: <code>005-data-structures-types/</code></p>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 1</div>
+  <h1>Krotki, tablice i wycinki</h1>
+  <div class="bar"></div>
+</section>
+
+<section class="slide">
+  <h2>Destrukturyzacja</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">let person = ("Alice", 30, 1.68);
+let (name, age, _) = person;
+println!("{name} is {age}");
+
+let (smallest, largest) = min_max(9, 4);
+println!("{smallest} {largest}");
+
+fn min_max(first: i32, second: i32) -> (i32, i32) {
+    if first &lt; second {
+        (first, second)
+    } else {
+        (second, first)
+    }
+}</code></pre>
+    </div>
+    <div>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>Alice is 30
+4 9</code></pre>
+      <ul class="compact">
+        <li>Wzorzec po lewej stronie <code>let</code> rozpakowuje krotkę do zmiennych.</li>
+        <li><code>_</code> pomija pole, które nie jest potrzebne.</li>
+        <li>Wzorzec musi mieć dokładnie tyle pól, co krotka (inaczej E0308).</li>
+        <li>Zwrócenie krotki to sposób na zwrócenie kilku wartości z funkcji.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Wycinki (slices)</h2>
+  <div class="columns">
+    <div>
+      <pre class="small"><code class="lang-rust">let primes = [2, 3, 5, 7, 11];
+let middle = &amp;primes[1..4];
+println!("{middle:?} {}", middle.len());</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>[3, 5, 7] 3</code></pre>
+      <ul class="compact">
+        <li><strong>Wycinek</strong> pożycza ciąg sąsiednich elementów bez ich kopiowania.</li>
+        <li>Przechowuje wskaźnik na pierwszy element i długość.</li>
+        <li>Jego typ to <code>&amp;[i32]</code>. Zakresy: <code>[1..4]</code>, <code>[..2]</code>, <code>[3..]</code>, <code>[..]</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <svg class="diagram" viewBox="0 0 520 240" role="img" aria-label="middle wskazuje drugi element primes i ma długość 3"><text x="0" y="10" class="caption">STOS</text><text x="0" y="34" class="name">primes: [i32; 5]</text><text x="30.0" y="56" class="caption" text-anchor="middle">0</text><text x="90.0" y="56" class="caption" text-anchor="middle">1</text><text x="150.0" y="56" class="caption" text-anchor="middle">2</text><text x="210.0" y="56" class="caption" text-anchor="middle">3</text><text x="270.0" y="56" class="caption" text-anchor="middle">4</text><g><rect x="0" y="66" width="60" height="40" class="cell"/><text x="30.0" y="86.0" text-anchor="middle">2</text><rect x="60" y="66" width="60" height="40" class="heap-cell"/><text x="90.0" y="86.0" text-anchor="middle">3</text><rect x="120" y="66" width="60" height="40" class="heap-cell"/><text x="150.0" y="86.0" text-anchor="middle">5</text><rect x="180" y="66" width="60" height="40" class="heap-cell"/><text x="210.0" y="86.0" text-anchor="middle">7</text><rect x="240" y="66" width="60" height="40" class="cell"/><text x="270.0" y="86.0" text-anchor="middle">11</text></g><text x="144.0" y="185.0" class="name">middle: &amp;[i32]</text><rect x="0.0" y="170" width="50" height="30" class="cell"/><rect x="50.0" y="170" width="80" height="30" class="cell"/><text x="10.0" y="185.0">ptr</text><circle cx="90.0" cy="185.0" r="5" class="dot"/><rect x="0.0" y="200" width="50" height="30" class="cell"/><rect x="50.0" y="200" width="80" height="30" class="cell"/><text x="10.0" y="215.0">len</text><text x="62.0" y="215.0">3</text><g><path d="M90.0,185.0 C90.0,165.0 90.0,128 90.0,120.0" class="link"/><polygon points="90.0,108 84.0,120.0 96.0,120.0" class="link-head"/></g></svg>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Wycinki jako parametry</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">fn sum(numbers: &amp;[i32]) -> i32 {
+    let mut total = 0;
+    for number in numbers {
+        total += number;
+    }
+    total
+}
+
+println!("{}", sum(&amp;primes));
+println!("{}", sum(&amp;primes[..2]));</code></pre>
+    </div>
+    <div>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>28
+5</code></pre>
+      <ul class="compact">
+        <li>Parametr <code>&amp;[i32]</code> przyjmie całą tablicę, jej fragment albo <code>Vec</code>.</li>
+        <li>Zakres poza danymi kończy się paniką:</li>
+      </ul>
+      <pre class="tiny output"><code>range end index 10 out of range
+for slice of length 5</code></pre>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Wycinki napisów</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let text = String::from("hello world");
+let hello = &amp;text[0..5];
+let world = &amp;text[6..];
+println!("{hello} | {world}");</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>hello | world</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>&amp;str</code> to <strong>wycinek napisu</strong>: wskaźnik i długość w jakimś tekście.</li>
+        <li>Literał napisowy to wycinek tekstu zapisanego w pliku programu (rozdział 3).</li>
+        <li>Zakres liczy <strong>bajty</strong>, a nie znaki. Więcej w części 2.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 2</div>
+  <h1>Kolekcje</h1>
+  <div class="bar"></div>
+  <div class="subtitle"><code>Vec</code>, <code>String</code>, <code>HashMap</code>, iteratory i domknięcia</div>
+</section>
+
+<section class="slide">
+  <h2><code>Vec</code>: rozszerzalna lista</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">let mut scores = Vec::new();
+for round in 1..=3 {
+    scores.push(round * 10);
+}
+let mut letters = vec!['a', 'b', 'c'];
+let last = letters.pop();
+println!("{scores:?} {letters:?} {last:?}");</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>[10, 20, 30] ['a', 'b'] Some('c')</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>Vec&lt;T&gt;</code> trzyma elementy na stercie, tak jak <code>String</code>: wskaźnik, długość, pojemność.</li>
+        <li><code>&lt;T&gt;</code> czytamy „typu T”: <code>Vec&lt;i32&gt;</code>. Typy generyczne omówimy w rozdziale 6.</li>
+        <li><code>vec![…]</code> tworzy <code>Vec</code> z elementami. <code>push</code> i <code>pop</code> wymagają <code>mut</code>.</li>
+        <li><code>pop</code> zwraca <code>Option</code>, bo <code>Vec</code> może być pusty (część 4).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Odczyt elementów</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">println!("{}", scores[1]);
+println!("{:?}", scores.get(1));
+println!("{:?}", scores.get(10));</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>20
+Some(20)
+None</code></pre>
+      <span class="label command">scores[10]</span>
+      <pre class="tiny output"><code>index out of bounds: the len is 3 but the index is 10</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>[index]</code> panikuje, gdy indeks jest za duży.</li>
+        <li><code>.get(index)</code> nigdy nie panikuje. Zwraca <code>Some(value)</code> albo <code>None</code>.</li>
+        <li>Używaj <code>[ ]</code>, gdy indeks na pewno jest poprawny, a <code>.get()</code>, gdy może nie być.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Przechodzenie i zmiana elementów</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">for score in &amp;scores {
+    print!("{score} ");
+}
+for score in &amp;mut scores {
+    *score += 1;
+}
+println!("{scores:?}");</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>10 20 30 [11, 21, 31]</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>for score in &amp;scores</code> pożycza każdy element do odczytu.</li>
+        <li><code>&amp;mut scores</code> pożycza każdy element do zmiany.</li>
+        <li><code>*score</code> to <strong>dereferencja</strong>: oznacza wartość, na którą wskazuje referencja.</li>
+        <li><code>for score in scores</code> bez <code>&amp;</code> przenosi <code>Vec</code> do pętli i potem nie da się go użyć.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>Vec</code> a zasada pożyczania</h2>
+  <pre class="small"><code class="lang-error">error[E0502]: cannot borrow `numbers` as mutable because it is also borrowed as immutable
+ --> src/main.rs:4:5
+  |
+3 |     let first = &amp;numbers[0];
+  |                  ------- immutable borrow occurs here
+4 |     numbers.push(4);
+  |     ^^^^^^^^^^^^^^^ mutable borrow occurs here
+5 |     println!("{first}");
+  |                ----- immutable borrow later used here</code></pre>
+  <ul>
+    <li><code>first</code> pożycza element, a <code>push</code> musi zmienić cały <code>Vec</code>.</li>
+    <li>To zasada pożyczania z rozdziału 3. Następny slajd pokazuje, dlaczego jest tu ważna.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Dlaczego: <code>push</code> może przenieść dane</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <svg class="diagram" viewBox="0 0 560 260" role="img" aria-label="po push numbers wskazuje nowy bufor, a first wciąż wskazuje zwolniony stary bufor"><text x="0" y="10" class="caption">STOS</text><text x="310" y="10" class="caption">STERTA</text><text x="310" y="48" class="caption">NOWY BUFOR</text><g><rect x="310" y="60" width="40" height="40" class="heap-cell"/><text x="330.0" y="80.0" text-anchor="middle">1</text><rect x="350" y="60" width="40" height="40" class="heap-cell"/><text x="370.0" y="80.0" text-anchor="middle">2</text><rect x="390" y="60" width="40" height="40" class="heap-cell"/><text x="410.0" y="80.0" text-anchor="middle">3</text><rect x="430" y="60" width="40" height="40" class="heap-cell"/><text x="450.0" y="80.0" text-anchor="middle">4</text><rect x="470" y="60" width="40" height="40" class="heap-cell"/><text x="490.0" y="80.0" text-anchor="middle"></text><rect x="510" y="60" width="40" height="40" class="heap-cell"/><text x="530.0" y="80.0" text-anchor="middle"></text></g><g class="faded"><text x="310" y="188" class="caption">STARY BUFOR, ZWOLNIONY</text><g><rect x="310" y="200" width="40" height="40" class="heap-cell"/><text x="330.0" y="220.0" text-anchor="middle">1</text><rect x="350" y="200" width="40" height="40" class="heap-cell"/><text x="370.0" y="220.0" text-anchor="middle">2</text><rect x="390" y="200" width="40" height="40" class="heap-cell"/><text x="410.0" y="220.0" text-anchor="middle">3</text></g></g><g><rect x="0" y="28" width="230" height="30" class="head"/><text x="12" y="43.0" class="name">numbers: Vec&lt;i32&gt;</text><rect x="0" y="58" width="120" height="30" class="cell"/><rect x="120" y="58" width="110" height="30" class="cell"/><text x="12" y="73.0">ptr</text><circle cx="175.0" cy="73.0" r="5" class="dot"/><rect x="0" y="88" width="120" height="30" class="cell"/><rect x="120" y="88" width="110" height="30" class="cell"/><text x="12" y="103.0">len</text><text x="132" y="103.0">4</text><rect x="0" y="118" width="120" height="30" class="cell"/><rect x="120" y="118" width="110" height="30" class="cell"/><text x="12" y="133.0">capacity</text><text x="132" y="133.0">6</text></g><g><rect x="0" y="190" width="230" height="30" class="head"/><text x="12" y="205.0" class="name">first: &amp;i32</text><rect x="0" y="220" width="120" height="30" class="cell"/><rect x="120" y="220" width="110" height="30" class="cell"/><text x="12" y="235.0">ptr</text><circle cx="175.0" cy="235.0" r="5" class="dot"/></g><g><path d="M175.0,73.0 C245.0,73.0 260,80 298.0,80.0" class="link"/><polygon points="310,80 298.0,74.0 298.0,86.0" class="link-head"/></g><g><path d="M175.0,235.0 C245.0,235.0 260,220 298.0,220.0" class="link dashed"/><polygon points="310,220 298.0,214.0 298.0,226.0" class="link-head"/></g></svg>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>vec![1, 2, 3]</code> ma miejsce na dokładnie 3 elementy.</li>
+        <li><code>push(4)</code> rezerwuje większy bufor (pojemność 6), kopiuje elementy i zwalnia stary.</li>
+        <li><code>first</code> wskazywałby wtedy zwolnioną pamięć. Borrow checker odrzuca to już podczas kompilacji.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>String</code> dokładniej</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let mut greeting = String::from("Hello");
+greeting.push(',');
+greeting.push_str(" world");
+let full = format!("{greeting}!");
+println!("{full}");</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>Hello, world!</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>String</code> to rozszerzalna lista bajtów, która zawsze zawiera poprawny tekst UTF-8.</li>
+        <li><code>push</code> dodaje jeden <code>char</code>, a <code>push_str</code> dodaje <code>&amp;str</code>.</li>
+        <li><code>format!</code> buduje nowy <code>String</code> z kilku części.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Bajty i znaki</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">let word = "zażółć";
+println!("{} {}", word.len(), word.chars().count());</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>10 6</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>W UTF-8 znak zajmuje od 1 do 4 bajtów. <code>ż</code>, <code>ó</code>, <code>ł</code>, <code>ć</code> zajmują po 2.</li>
+        <li><code>.len()</code> liczy bajty, a <code>.chars()</code> przechodzi po znakach.</li>
+        <li>Pozycja bajtu nie musi być znakiem, więc napisów nie można indeksować.</li>
+      </ul>
+    </div>
+  </div>
+  <span class="label command">word[0]</span>
+  <pre class="tiny"><code class="lang-error">error[E0277]: the type `str` cannot be indexed by `{integer}`</code></pre>
+  <span class="label command">&amp;word[0..3]</span>
+  <pre class="tiny output"><code>byte index 3 is not a char boundary; it is inside 'ż' (bytes 2..4) of `zażółć`</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Domknięcia (closures)</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let double = |x| x * 2;
+let add = |a: i32, b: i32| a + b;
+let offset = 10;
+let shift = |x| x + offset;
+println!("{} {} {}", double(4), add(2, 3), shift(1));</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>8 5 11</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><strong>Domknięcie</strong> to funkcja bez nazwy: parametry między <code>| |</code>, potem ciało.</li>
+        <li>Typy parametrów i wyniku są zwykle wnioskowane.</li>
+        <li>Domknięcie może używać zmiennych z otoczenia, jak <code>offset</code>.</li>
+        <li>Domknięcia najczęściej przekazuje się do metod iteratorów.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Iteratory</h2>
+  <pre class="small"><code class="lang-rust">let numbers = [1, 2, 3, 4];
+let doubled: Vec&lt;i32&gt; = numbers.iter().map(|n| n * 2).collect();
+let total: i32 = numbers.iter().sum();
+let words = ["apple", "fig", "banana"];
+let long_count = words.iter().filter(|word| word.len() &gt; 3).count();
+for (index, word) in words.iter().enumerate() {
+    println!("{index}: {word}");
+}</code></pre>
+  <div class="columns">
+    <div>
+      <span class="label">Wartości i wynik</span>
+      <pre class="small output"><code>doubled: [2, 4, 6, 8]  total: 10
+long_count: 2
+0: apple  1: fig  2: banana</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>.iter()</code> pożycza każdy element, a <code>.iter_mut()</code> pożycza go modyfikowalnie.</li>
+        <li><strong>Adaptery</strong> (<code>.map()</code>, <code>.filter()</code>, <code>.enumerate()</code>) budują nowy iterator. <strong>Konsumenci</strong> (<code>.sum()</code>, <code>.count()</code>, <code>.collect()</code>, <code>for</code>) go uruchamiają.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Iteratory są leniwe</h2>
+  <span class="label">Bez konsumenta</span>
+  <pre class="tiny"><code class="lang-error">warning: unused `Map` that must be used
+ --> src/main.rs:3:5
+  |
+3 |     numbers.iter().map(|n| n * 2);
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  = note: iterators are lazy and do nothing unless consumed</code></pre>
+  <span class="label">collect bez typu</span>
+  <pre class="tiny"><code class="lang-error">error[E0283]: type annotations needed
+ --> src/main.rs:3:9
+  |
+3 |     let doubled = numbers.iter().map(|n| n * 2).collect();
+  |         ^^^^^^^                                 ------- type must be known at this point</code></pre>
+  <p><code>.collect()</code> musi wiedzieć, jaką kolekcję zbudować: <code>let doubled: Vec&lt;_&gt;</code>. <code>_</code> pozwala kompilatorowi uzupełnić typ elementów.</p>
+</section>
+
+<section class="slide">
+  <h2><code>HashMap</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">use std::collections::HashMap;
+
+let mut ages = HashMap::new();
+ages.insert("Alice", 30);
+ages.insert("Bob", 25);
+println!("{:?}", ages.get("Alice"));
+println!("{:?}", ages.get("Carol"));</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>Some(30)
+None</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>HashMap&lt;K, V&gt;</code> przechowuje wartości pod kluczami.</li>
+        <li><code>use</code> udostępnia ją z biblioteki standardowej.</li>
+        <li><code>insert</code> dodaje wartość albo zastępuje starą dla tego klucza.</li>
+        <li><code>get</code> zwraca <code>Option</code>, a <code>ages["Carol"]</code> panikuje: <em>no entry found for key</em>.</li>
+        <li>Kolejność przechodzenia jest dowolna.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Liczenie z <code>entry</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let sentence = "the cat and the hat";
+let mut counts = HashMap::new();
+for word in sentence.split_whitespace() {
+    let count = counts.entry(word).or_insert(0);
+    *count += 1;
+}
+println!("{}", counts["the"]);</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>2</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>entry(word)</code> znajduje miejsce dla klucza.</li>
+        <li><code>.or_insert(0)</code> wstawia tam <code>0</code>, jeśli klucz jest nowy, i zwraca modyfikowalną referencję do wartości.</li>
+        <li><code>*count += 1</code> zmienia wartość przez tę referencję, tak jak wcześniej <code>*score</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 3</div>
+  <h1>Struktury</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Nazwane pola, które do siebie należą</div>
+</section>
+
+<section class="slide">
+  <h2>Definiowanie struktury</h2>
+  <div class="columns">
+    <div>
+      <pre class="small"><code class="lang-rust">struct User {
+    name: String,
+    age: u32,
+    active: bool,
+}
+
+let user = User {
+    name: String::from("Alice"),
+    age: 30,
+    active: true,
+};
+println!("{} {}", user.name, user.age);</code></pre>
+    </div>
+    <div>
+      <svg class="diagram" viewBox="0 0 520 220" role="img" aria-label="struktura user trzyma na stosie wskaźnik, długość i pojemność name oraz age i active; tekst name jest na stercie"><text x="0" y="10" class="caption">STOS</text><text x="330" y="10" class="caption">STERTA</text><g><rect x="0" y="28" width="230" height="30" class="head"/><text x="12" y="43.0" class="name">user: User</text><rect x="0" y="58" width="150" height="30" class="cell"/><rect x="150" y="58" width="80" height="30" class="cell"/><text x="12" y="73.0">name.ptr</text><circle cx="190.0" cy="73.0" r="5" class="dot"/><rect x="0" y="88" width="150" height="30" class="cell"/><rect x="150" y="88" width="80" height="30" class="cell"/><text x="12" y="103.0">name.len</text><text x="162" y="103.0">5</text><rect x="0" y="118" width="150" height="30" class="cell"/><rect x="150" y="118" width="80" height="30" class="cell"/><text x="12" y="133.0">name.capacity</text><text x="162" y="133.0">5</text><rect x="0" y="148" width="150" height="30" class="cell"/><rect x="150" y="148" width="80" height="30" class="cell"/><text x="12" y="163.0">age</text><text x="162" y="163.0">30</text><rect x="0" y="178" width="150" height="30" class="cell"/><rect x="150" y="178" width="80" height="30" class="cell"/><text x="12" y="193.0">active</text><text x="162" y="193.0">true</text></g><g><rect x="330" y="53.0" width="36" height="40" class="heap-cell"/><text x="348.0" y="73.0" text-anchor="middle">A</text><rect x="366" y="53.0" width="36" height="40" class="heap-cell"/><text x="384.0" y="73.0" text-anchor="middle">l</text><rect x="402" y="53.0" width="36" height="40" class="heap-cell"/><text x="420.0" y="73.0" text-anchor="middle">i</text><rect x="438" y="53.0" width="36" height="40" class="heap-cell"/><text x="456.0" y="73.0" text-anchor="middle">c</text><rect x="474" y="53.0" width="36" height="40" class="heap-cell"/><text x="492.0" y="73.0" text-anchor="middle">e</text></g><g><path d="M190.0,73.0 C250.0,73.0 280,73.0 318.0,73.0" class="link"/><polygon points="330,73.0 318.0,67.0 318.0,79.0" class="link-head"/></g></svg>
+      <ul class="compact">
+        <li>Struktura nazywa swoje pola i ich typy. Instancja musi ustawić każde pole.</li>
+        <li>Pola odczytujemy przez <code>.name</code>.</li>
+        <li>Struktura jest właścicielem pól i są one usuwane razem z nią.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Zmiana i budowanie struktur</h2>
+  <div class="columns">
+    <div>
+      <pre class="small"><code class="lang-rust">let mut user = User {
+    name: String::from("Alice"),
+    age: 30,
+    active: true,
+};
+user.age += 1;</code></pre>
+      <ul class="compact">
+        <li>Cała instancja jest <code>mut</code> albo nie. Pojedyncze pola nie mogą być.</li>
+        <li>Bez <code>mut</code>: <em>E0594 cannot assign to <code>user.age</code>, as <code>user</code> is not declared as mutable</em>.</li>
+      </ul>
+    </div>
+    <div>
+      <pre class="small"><code class="lang-rust">fn new_user(name: String, age: u32) -> User {
+    User {
+        name,
+        age,
+        active: true,
+    }
+}</code></pre>
+      <ul class="compact">
+        <li><strong>Skrócony zapis pól</strong>: <code>name</code> zamiast <code>name: name</code>, gdy zmienna ma nazwę pola.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Wypisywanie struktury</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">#[derive(Debug)]
+struct User {
+    name: String,
+    age: u32,
+    active: bool,
+}
+
+println!("{user:?}");
+println!("{user:#?}");</code></pre>
+    </div>
+    <div>
+      <span class="label">Wynik</span>
+      <pre class="tiny output"><code>User { name: "Alice", age: 30, active: true }
+User {
+    name: "Alice",
+    age: 30,
+    active: true,
+}</code></pre>
+      <ul class="compact">
+        <li><code>#[derive(Debug)]</code> generuje kod, dzięki któremu <code>{:?}</code> działa dla twojego typu.</li>
+        <li>Bez tego: <em>E0277 <code>User</code> doesn't implement <code>Debug</code></em>. Kompilator podpowiada dopisanie tej linii.</li>
+        <li>Działanie <code>derive</code> omówimy przy traitach w rozdziale 6.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Struktury krotkowe</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">struct Meters(f64);
+struct Seconds(f64);
+
+let distance = Meters(5.0);
+let time = Seconds(2.0);
+println!("{}", distance.0 / time.0);</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>2.5</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><strong>Struktura krotkowa</strong> (tuple struct) ma nazwę, ale jej pola nie mają: <code>.0</code>, <code>.1</code>.</li>
+        <li><code>Meters</code> i <code>Seconds</code> to różne typy, więc nie da się przekazać jednego zamiast drugiego, choć oba zawierają <code>f64</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Metody</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">impl User {
+    fn greeting(&amp;self) -> String {
+        format!("Hi, I'm {}", self.name)
+    }
+
+    fn birthday(&amp;mut self) {
+        self.age += 1;
+    }
+}
+
+let mut user = User::new("Alice", 30);
+user.birthday();
+println!("{} ({})", user.greeting(), user.age);</code></pre>
+    </div>
+    <div>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>Hi, I'm Alice (31)</code></pre>
+      <ul class="compact">
+        <li>Blok <code>impl</code> dodaje funkcje do typu.</li>
+        <li><strong>Metoda</strong> przyjmuje <code>self</code> jako pierwszy parametr i wywołujemy ją z kropką: <code>user.birthday()</code>.</li>
+        <li><code>&amp;self</code> pożycza do odczytu, a <code>&amp;mut self</code> do zmiany, jak w rozdziale 3.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Funkcje powiązane i <code>self</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">impl User {
+    fn new(name: &amp;str, age: u32) -> Self {
+        Self {
+            name: String::from(name),
+            age,
+            active: true,
+        }
+    }
+
+    fn into_name(self) -> String {
+        self.name
+    }
+}</code></pre>
+    </div>
+    <div>
+      <table class="compact">
+        <tr><th>Pierwszy parametr</th><th>Znaczenie</th></tr>
+        <tr><td><code>&amp;self</code></td><td>Pożycza do odczytu</td></tr>
+        <tr><td><code>&amp;mut self</code></td><td>Pożycza do zmiany</td></tr>
+        <tr><td><code>self</code></td><td>Przejmuje własność. Instancja zostaje zużyta.</td></tr>
+        <tr><td>brak</td><td>Funkcja powiązana, wywoływana jako <code>User::new(…)</code></td></tr>
+      </table>
+      <p class="aside spaced"><code>Self</code> oznacza typ bloku <code>impl</code>, tutaj <code>User</code>. <code>new</code> to zwyczajowa nazwa konstruktora.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Czasy życia w strukturach</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">struct Excerpt&lt;'a&gt; {
+    text: &amp;'a str,
+}
+
+let novel = String::from("Call me Ishmael. Some years ago...");
+let first_sentence = &amp;novel[..16];
+let excerpt = Excerpt { text: first_sentence };
+println!("{}", excerpt.text);</code></pre>
+      <span class="label">Bez czasu życia</span>
+      <pre class="tiny"><code class="lang-error">error[E0106]: missing lifetime specifier
+ --> src/main.rs:2:11
+  |
+2 |     text: &amp;str,
+  |           ^ expected named lifetime parameter</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>Struktura, która trzyma referencję, potrzebuje czasu życia. To dopełnienie rozdziału 3.</li>
+        <li><code>Excerpt&lt;'a&gt;</code> mówi: fragment nie może żyć dłużej niż tekst, który pożycza.</li>
+        <li>Wybieraj pola posiadane (<code>String</code>), chyba że masz powód, by pożyczać.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 4</div>
+  <h1>Enumy i <code>Option</code></h1>
+  <div class="bar"></div>
+  <div class="subtitle">Wartość, która jest jednym z kilku wariantów</div>
+</section>
+
+<section class="slide">
+  <h2>Enumy</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">enum Shape {
+    Circle(f64),
+    Rectangle(f64, f64),
+    Empty,
+}
+
+impl Shape {
+    fn area(&amp;self) -> f64 {
+        match self {
+            Shape::Circle(radius) =&gt; PI * radius * radius,
+            Shape::Rectangle(width, height) =&gt; width * height,
+            Shape::Empty =&gt; 0.0,
+        }
+    }
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>Wartość <strong>enuma</strong> to dokładnie jeden z jego wariantów.</li>
+        <li>Wariant może zawierać dane, jak <code>Circle(f64)</code>, albo nie, jak <code>Empty</code>.</li>
+        <li><code>match</code> wybiera wariant i wyciąga jego dane do zmiennych.</li>
+        <li>Enumy też mogą mieć metody.</li>
+      </ul>
+      <p class="aside"><code>PI</code> to <code>std::f64::consts::PI</code>.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>match</code> musi obsłużyć każdy wariant</h2>
+  <pre class="tiny"><code class="lang-error">error[E0004]: non-exhaustive patterns: `&amp;Shape::Empty` not covered
+ --> src/main.rs:8:11
+  |
+8 |     match shape {
+  |           ^^^^^ pattern `&amp;Shape::Empty` not covered
+  |
+note: `Shape` defined here
+ --> src/main.rs:1:6
+  |
+1 | enum Shape {
+  |      ^^^^^
+...
+4 |     Empty,
+  |     ----- not covered</code></pre>
+  <ul>
+    <li>Kompilator wskazuje dokładnie, którego wariantu brakuje.</li>
+    <li>Gdy dodasz wariant do enuma, każdy <code>match</code>, który o nim zapomina, przestaje się kompilować.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2><code>Option</code>: wartość albo nic</h2>
+  <div class="columns">
+    <div>
+      <pre class="small"><code class="lang-rust">enum Option&lt;T&gt; {
+    None,
+    Some(T),
+}</code></pre>
+      <ul class="compact">
+        <li>Rust nie ma <code>null</code>. Wartość, której może brakować, ma typ <code>Option</code>.</li>
+        <li>Już go spotkaliśmy: <code>checked_add</code> (rozdział 2), <code>Vec::get</code>, <code>pop</code>, <code>HashMap::get</code>.</li>
+        <li><code>Option&lt;i32&gt;</code> to nie <code>i32</code>. Zanim użyjesz wartości, musisz obsłużyć <code>None</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <pre class="small"><code class="lang-rust">let values = [10, 20, 30];
+match values.get(5) {
+    Some(value) =&gt; println!("found {value}"),
+    None =&gt; println!("nothing there"),
+}</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>nothing there</code></pre>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>if let</code> i metody pomocnicze</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">if let Some(first) = values.first() {
+    println!("first: {first}");
+}
+let bonus = 250_u8.checked_add(10).unwrap_or(0);
+let fallback = letters.pop().unwrap_or('?');</code></pre>
+      <span class="label">Wynik i wartości</span>
+      <pre class="small output"><code>first: 10
+bonus: 0  fallback: 'b'</code></pre>
+      <span class="label command">values.get(5).unwrap()</span>
+      <pre class="tiny output"><code>called `Option::unwrap()` on a `None` value</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>if let</code> obsługuje jeden wariant, a resztę pomija.</li>
+        <li><code>.unwrap_or(default)</code> daje wartość albo wartość domyślną dla <code>None</code>.</li>
+        <li><code>.unwrap()</code> daje wartość albo panikuje. Używaj go tylko wtedy, gdy <code>None</code> naprawdę nie może wystąpić.</li>
+      </ul>
+      <p class="aside"><code>Result</code>, dla operacji, które mogą się nie udać, omówimy w rozdziale 6.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Wybór struktury danych</h2>
+  <table>
+    <tr><th>Typ</th><th>Do czego</th><th>Przykład</th></tr>
+    <tr><td>Krotka</td><td>Kilka wartości różnych typów, według pozycji</td><td>Zwracanie <code>(smallest, largest)</code></td></tr>
+    <tr><td>Tablica</td><td>Stała liczba wartości jednego typu</td><td><code>[i32; 5]</code></td></tr>
+    <tr><td>Wycinek</td><td>Pożyczanie fragmentu tablicy, <code>Vec</code> albo tekstu</td><td>Parametry <code>&amp;[T]</code>, <code>&amp;str</code></td></tr>
+    <tr><td><code>Vec</code>, <code>String</code></td><td>Listy i tekst, które rosną</td><td>Wyniki, dane od użytkownika</td></tr>
+    <tr><td><code>HashMap</code></td><td>Wyszukiwanie wartości po kluczu</td><td>Liczba wystąpień słów</td></tr>
+    <tr><td>Struktura</td><td>Nazwane pola, które do siebie należą</td><td>Użytkownik</td></tr>
+    <tr><td>Enum</td><td>Wartość, która jest jednym z kilku wariantów</td><td>Kształt, <code>Option</code></td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2>Podsumowanie</h2>
+  <ul>
+    <li>Destrukturyzacja rozpakowuje krotki. Wycinki pożyczają fragment tablicy, <code>Vec</code> albo napisu.</li>
+    <li><code>Vec</code>, <code>String</code> i <code>HashMap</code> rosną na stercie i podlegają zasadom pożyczania.</li>
+    <li><code>String</code> to UTF-8: <code>.len()</code> liczy bajty, a indeksowanie jest niedozwolone.</li>
+    <li>Domknięcia i adaptery iteratorów przetwarzają kolekcje. Nic się nie dzieje, dopóki nie zadziała konsument.</li>
+    <li>Struktury grupują nazwane pola. <code>impl</code> dodaje metody z <code>&amp;self</code>, <code>&amp;mut self</code> albo <code>self</code>.</li>
+    <li>Enumy przechowują jeden z kilku wariantów. <code>Option</code> zastępuje <code>null</code>, a <code>match</code> musi obsłużyć każdy przypadek.</li>
+  </ul>
+  <p class="note">Dalej: rozdział 6, zaawansowane koncepcje i testowanie.</p>
+</section>
+
+</div>
+
+</div>
+</div>
+<script src="assets/deck.js"></script>
+</body>
+</html>

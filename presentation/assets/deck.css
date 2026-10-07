@@ -123,6 +123,7 @@ body {
 }
 .slide pre code { background: none; padding: 0; font-size: 1em; color: inherit; white-space: pre; }
 .slide pre.small { font-size: 19px; }
+.slide pre.tiny { font-size: 16px; padding: 14px 18px; }
 .slide pre.output {
   background: var(--accent-soft);
   color: var(--text);
@@ -162,6 +163,26 @@ body {
 .tok-warning { color: var(--tok-warning); font-weight: 600; }
 .tok-help { color: var(--tok-help); }
 .tok-comment { color: var(--tok-comment); font-style: italic; }
+.tok-lifetime { color: var(--tok-macro); font-style: italic; }
+
+.diagram { display: block; width: 100%; height: auto; }
+.diagram text { font-family: var(--font-code); font-size: 17px; fill: var(--text); dominant-baseline: middle; }
+.diagram .caption {
+  font-family: var(--font-text);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  fill: var(--muted);
+}
+.diagram .name { font-weight: 700; fill: var(--accent); }
+.diagram .cell { fill: var(--stage); stroke: var(--rule); stroke-width: 2; }
+.diagram .head { fill: var(--accent-soft); stroke: var(--rule); stroke-width: 2; }
+.diagram .heap-cell { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+.diagram .link { stroke: var(--accent); stroke-width: 2.5; fill: none; }
+.diagram .link-head { fill: var(--accent); }
+.diagram .dot { fill: var(--accent); }
+.diagram .faded { opacity: 0.35; }
+.diagram .dashed { stroke-dasharray: 6 5; }
 
 .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
 .columns-wide-left { grid-template-columns: 1.3fr 1fr; }
@@ -185,6 +206,7 @@ body {
 table { border-collapse: collapse; width: 100%; font-size: 22px; }
 th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
 th { color: var(--muted); font-size: 16px; text-transform: uppercase; letter-spacing: 0.06em; }
+th code { text-transform: none; letter-spacing: 0; }
 
 .title-slide { justify-content: center; }
 .title-slide .chapter {

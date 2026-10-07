@@ -1,0 +1,1033 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ownership and references</title>
+<link rel="stylesheet" href="assets/deck.css">
+</head>
+<body>
+<div class="viewport">
+<div class="deck" id="deck">
+
+<div class="slides" data-lang="en">
+
+<section class="slide title-slide">
+  <div class="chapter">Chapter 3</div>
+  <h1>Ownership and references</h1>
+  <div class="bar"></div>
+  <div class="subtitle">The ownership system, the borrow checker, references, lifetimes</div>
+</section>
+
+<section class="slide">
+  <h2>In this chapter</h2>
+  <ol>
+    <li><strong>Ownership</strong>: stack and heap, <code>String</code>, the ownership rules, move, copy, clone</li>
+    <li><strong>References and borrowing</strong>: <code>&amp;</code>, <code>&amp;mut</code>, the borrowing rules, the borrow checker</li>
+    <li><strong>Lifetimes</strong>: dangling references, lifetime annotations, <code>'static</code></li>
+  </ol>
+  <p class="note">Code for this chapter: <code>003-ownership-references/</code></p>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 1</div>
+  <h1>Ownership</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Who frees the memory, and when?</div>
+</section>
+
+<section class="slide">
+  <h2>Who frees the memory?</h2>
+  <div class="card"><h3>Manually: C, C++</h3><p>The programmer frees memory. Forget it and memory leaks. Free it twice, or use it after freeing, and the program crashes or worse.</p></div>
+  <div class="card"><h3>A garbage collector: Java, Python, Go</h3><p>A runtime finds unused memory and frees it. Safe, but it costs time and memory while the program runs.</p></div>
+  <div class="card"><h3>Ownership: Rust</h3><p>The compiler knows when each value is no longer needed and inserts the cleanup there. Safe, with no runtime cost.</p></div>
+</section>
+
+<section class="slide">
+  <h2>Stack and heap</h2>
+  <div class="columns">
+    <div>
+      <pre><code class="lang-rust">let number = 5;
+let text = String::from("hello");</code></pre>
+      <ul class="compact">
+        <li><strong>Stack</strong>: values with a fixed size known at compile time, like all the types from chapter 2. Freed automatically when the function ends.</li>
+        <li><strong>Heap</strong>: data whose size is known only at runtime, or that can grow. Has to be freed exactly once.</li>
+        <li>Ownership is how Rust decides when heap data is freed.</li>
+      </ul>
+    </div>
+    <div>
+      <svg class="diagram" viewBox="0 0 520 240" role="img" aria-label="number lives on the stack; text keeps a pointer, length and capacity on the stack and its characters on the heap"><text x="0" y="10" class="caption">STACK</text><text x="330" y="10" class="caption">HEAP</text><g><rect x="0" y="28" width="230" height="30" class="head"/><text x="12" y="43.0" class="name">number: i32</text><rect x="0" y="58" width="120" height="30" class="cell"/><rect x="120" y="58" width="110" height="30" class="cell"/><text x="12" y="73.0">value</text><text x="132" y="73.0">5</text></g><g><rect x="0" y="112" width="230" height="30" class="head"/><text x="12" y="127.0" class="name">text: String</text><rect x="0" y="142" width="120" height="30" class="cell"/><rect x="120" y="142" width="110" height="30" class="cell"/><text x="12" y="157.0">ptr</text><circle cx="175.0" cy="157.0" r="5" class="dot"/><rect x="0" y="172" width="120" height="30" class="cell"/><rect x="120" y="172" width="110" height="30" class="cell"/><text x="12" y="187.0">len</text><text x="132" y="187.0">5</text><rect x="0" y="202" width="120" height="30" class="cell"/><rect x="120" y="202" width="110" height="30" class="cell"/><text x="12" y="217.0">capacity</text><text x="132" y="217.0">5</text></g><g><rect x="330" y="137.0" width="36" height="40" class="heap-cell"/><text x="348.0" y="157.0" text-anchor="middle">h</text><rect x="366" y="137.0" width="36" height="40" class="heap-cell"/><text x="384.0" y="157.0" text-anchor="middle">e</text><rect x="402" y="137.0" width="36" height="40" class="heap-cell"/><text x="420.0" y="157.0" text-anchor="middle">l</text><rect x="438" y="137.0" width="36" height="40" class="heap-cell"/><text x="456.0" y="157.0" text-anchor="middle">l</text><rect x="474" y="137.0" width="36" height="40" class="heap-cell"/><text x="492.0" y="157.0" text-anchor="middle">o</text></g><path d="M175.0,157.0 C255.0,157.0 270,157.0 318,157.0" class="link"/><polygon points="330,157.0 318,151.0 318,163.0" class="link-head"/></svg>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>String</code>: text on the heap</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let literal: &amp;str = "hello";
+let mut owned = String::from("hello");
+owned.push_str(", world");
+println!("{literal} / {owned} / {}", owned.len());</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>hello / hello, world / 12</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>String::from</code> creates text that the variable <strong>owns</strong>.</li>
+        <li><code>push_str</code> appends text. The <code>String</code> grows on the heap.</li>
+        <li><code>let mut</code> allows the variable to change. Mutability is covered in chapter 4.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>&amp;str</code> vs <code>String</code></h2>
+  <table>
+    <tr><th></th><th><code>&amp;str</code> (literal)</th><th><code>String</code></th></tr>
+    <tr><td>Owns its text</td><td>No, it's a reference</td><td>Yes</td></tr>
+    <tr><td>Where the text lives</td><td>Inside the program binary</td><td>On the heap</td></tr>
+    <tr><td>Can grow or change</td><td>No</td><td>Yes, with <code>mut</code></td></tr>
+    <tr><td>Created with</td><td><code>"text"</code></td><td><code>String::from("text")</code></td></tr>
+  </table>
+  <ul class="spaced">
+    <li>A <code>&amp;String</code> can be passed where a <code>&amp;str</code> is expected. You'll see this in part 2.</li>
+  </ul>
+  <p class="note">The rest of <code>String</code> is covered in chapter 5.</p>
+</section>
+
+<section class="slide">
+  <h2>The ownership rules</h2>
+  <div class="columns">
+    <div>
+      <ol>
+        <li>Each value has an <strong>owner</strong>.</li>
+        <li>There is only <strong>one owner</strong> at a time.</li>
+        <li>When the owner goes out of scope, the value is <strong>dropped</strong>.</li>
+      </ol>
+    </div>
+    <div>
+      <pre><code class="lang-rust">{
+    let text = String::from("hello");
+    println!("{text}");
+}</code></pre>
+      <ul class="compact">
+        <li><code>text</code> is valid from <code>let</code> to the closing <code>}</code>.</li>
+        <li>At <code>}</code> Rust drops <code>text</code> and frees its heap memory.</li>
+        <li>Using <code>text</code> after <code>}</code> fails: <em>cannot find value <code>text</code> in this scope</em>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Move</h2>
+  <div class="columns">
+    <div>
+      <pre><code class="lang-rust">let first = String::from("hello");
+let second = first;
+println!("{second}");</code></pre>
+      <ul class="compact">
+        <li><code>let second = first;</code> copies only the pointer, length and capacity. The text on the heap isn't copied.</li>
+        <li>Ownership <strong>moves</strong> to <code>second</code>, and <code>first</code> can't be used anymore.</li>
+        <li>Otherwise both would free the same memory at <code>}</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <svg class="diagram" viewBox="0 0 520 300" role="img" aria-label="after the move, second points to the heap text and first is no longer usable"><text x="0" y="10" class="caption">STACK</text><text x="330" y="10" class="caption">HEAP</text><g class="faded"><rect x="0" y="28" width="230" height="30" class="head"/><text x="12" y="43.0" class="name">first</text><rect x="0" y="58" width="120" height="30" class="cell"/><rect x="120" y="58" width="110" height="30" class="cell"/><text x="12" y="73.0">ptr</text><circle cx="175.0" cy="73.0" r="5" class="dot"/><rect x="0" y="88" width="120" height="30" class="cell"/><rect x="120" y="88" width="110" height="30" class="cell"/><text x="12" y="103.0">len</text><text x="132" y="103.0">5</text><rect x="0" y="118" width="120" height="30" class="cell"/><rect x="120" y="118" width="110" height="30" class="cell"/><text x="12" y="133.0">capacity</text><text x="132" y="133.0">5</text></g><g><rect x="0" y="168" width="230" height="30" class="head"/><text x="12" y="183.0" class="name">second</text><rect x="0" y="198" width="120" height="30" class="cell"/><rect x="120" y="198" width="110" height="30" class="cell"/><text x="12" y="213.0">ptr</text><circle cx="175.0" cy="213.0" r="5" class="dot"/><rect x="0" y="228" width="120" height="30" class="cell"/><rect x="120" y="228" width="110" height="30" class="cell"/><text x="12" y="243.0">len</text><text x="132" y="243.0">5</text><rect x="0" y="258" width="120" height="30" class="cell"/><rect x="120" y="258" width="110" height="30" class="cell"/><text x="12" y="273.0">capacity</text><text x="132" y="273.0">5</text></g><g><rect x="330" y="123" width="36" height="40" class="heap-cell"/><text x="348.0" y="143.0" text-anchor="middle">h</text><rect x="366" y="123" width="36" height="40" class="heap-cell"/><text x="384.0" y="143.0" text-anchor="middle">e</text><rect x="402" y="123" width="36" height="40" class="heap-cell"/><text x="420.0" y="143.0" text-anchor="middle">l</text><rect x="438" y="123" width="36" height="40" class="heap-cell"/><text x="456.0" y="143.0" text-anchor="middle">l</text><rect x="474" y="123" width="36" height="40" class="heap-cell"/><text x="492.0" y="143.0" text-anchor="middle">o</text></g><g class="faded"><path d="M175.0,73.0 C265.0,73.0 260,135 318,135" class="link dashed"/><polygon points="330,135 318,129 318,141" class="link-head"/></g><path d="M175.0,213.0 C265.0,213.0 260,151 318,151" class="link"/><polygon points="330,151 318,145 318,157" class="link-head"/></svg>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Using a moved value</h2>
+  <pre class="tiny"><code class="lang-error">error[E0382]: borrow of moved value: `first`
+ --> src/main.rs:4:16
+  |
+2 |     let first = String::from("hello");
+  |         ----- move occurs because `first` has type `String`, which does not implement the `Copy` trait
+3 |     let second = first;
+  |                  ----- value moved here
+4 |     println!("{first} {second}");
+  |                ^^^^^ value borrowed here after move
+  |
+help: consider cloning the value if the performance cost is acceptable
+  |
+3 |     let second = first.clone();
+  |                       ++++++++</code></pre>
+  <ul>
+    <li>The compiler shows where the value was moved and where it's used afterwards.</li>
+    <li>It also suggests a fix: <code>.clone()</code>.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Copy and clone</h2>
+  <div class="columns">
+    <div>
+      <span class="label">Copy</span>
+      <pre><code class="lang-rust">let x = 5;
+let y = x;
+println!("{x} {y}");</code></pre>
+      <ul class="compact">
+        <li>Values that live only on the stack are <strong>copied</strong>, and both variables stay usable.</li>
+        <li>Copy types: integers, floats, <code>bool</code>, <code>char</code>, and tuples and arrays made of them.</li>
+      </ul>
+    </div>
+    <div>
+      <span class="label">Clone</span>
+      <pre><code class="lang-rust">let original = String::from("hello");
+let copy = original.clone();
+println!("{original} {copy}");</code></pre>
+      <ul class="compact">
+        <li><code>.clone()</code> copies the heap data too, so both variables own their own text.</li>
+        <li>It can be expensive, so Rust makes you write it out.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Ownership and functions</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">fn main() {
+    let text = String::from("hello");
+    take_ownership(text);
+    let returned = give_back(String::from("hi"));
+    println!("{returned}");
+}
+
+fn take_ownership(value: String) {
+    println!("{value}");
+}
+
+fn give_back(value: String) -> String {
+    value
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>Passing a <code>String</code> to a function <strong>moves</strong> it into the parameter.</li>
+        <li><code>value</code> is dropped at the end of <code>take_ownership</code>. Using <code>text</code> afterwards fails with E0382.</li>
+        <li>Returning a value moves ownership back to the caller.</li>
+        <li>Copy types such as <code>i32</code> are copied into the function.</li>
+        <li>Passing ownership back and forth gets tedious. References solve that.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 2</div>
+  <h1>References and borrowing</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Using a value without taking ownership</div>
+</section>
+
+<section class="slide">
+  <h2>References</h2>
+  <div class="columns">
+    <div>
+      <pre><code class="lang-rust">let text = String::from("hello");
+let borrowed = &amp;text;
+println!("{borrowed} {text}");</code></pre>
+      <ul class="compact">
+        <li><code>&amp;text</code> creates a <strong>reference</strong>: it points to the value without owning it.</li>
+        <li>Creating a reference is called <strong>borrowing</strong>.</li>
+        <li><code>text</code> stays the owner and is still usable.</li>
+        <li>When <code>borrowed</code> goes out of scope, nothing is freed.</li>
+      </ul>
+    </div>
+    <div>
+      <svg class="diagram" viewBox="0 0 520 258" role="img" aria-label="borrowed points to text, which points to its characters on the heap"><text x="0" y="10" class="caption">STACK</text><text x="330" y="10" class="caption">HEAP</text><g><rect x="0" y="28" width="230" height="30" class="head"/><text x="12" y="43.0" class="name">borrowed: &amp;String</text><rect x="0" y="58" width="120" height="30" class="cell"/><rect x="120" y="58" width="110" height="30" class="cell"/><text x="12" y="73.0">ptr</text><circle cx="175.0" cy="73.0" r="5" class="dot"/></g><g><rect x="0" y="128" width="230" height="30" class="head"/><text x="12" y="143.0" class="name">text: String</text><rect x="0" y="158" width="120" height="30" class="cell"/><rect x="120" y="158" width="110" height="30" class="cell"/><text x="12" y="173.0">ptr</text><circle cx="175.0" cy="173.0" r="5" class="dot"/><rect x="0" y="188" width="120" height="30" class="cell"/><rect x="120" y="188" width="110" height="30" class="cell"/><text x="12" y="203.0">len</text><text x="132" y="203.0">5</text><rect x="0" y="218" width="120" height="30" class="cell"/><rect x="120" y="218" width="110" height="30" class="cell"/><text x="12" y="233.0">capacity</text><text x="132" y="233.0">5</text></g><g><rect x="330" y="153.0" width="36" height="40" class="heap-cell"/><text x="348.0" y="173.0" text-anchor="middle">h</text><rect x="366" y="153.0" width="36" height="40" class="heap-cell"/><text x="384.0" y="173.0" text-anchor="middle">e</text><rect x="402" y="153.0" width="36" height="40" class="heap-cell"/><text x="420.0" y="173.0" text-anchor="middle">l</text><rect x="438" y="153.0" width="36" height="40" class="heap-cell"/><text x="456.0" y="173.0" text-anchor="middle">l</text><rect x="474" y="153.0" width="36" height="40" class="heap-cell"/><text x="492.0" y="173.0" text-anchor="middle">o</text></g><path d="M175.0,73.0 C285.0,73.0 290,143.0 244,143.0" class="link"/><polygon points="232,143.0 244,137.0 244,149.0" class="link-head"/><path d="M175.0,173.0 C255.0,173.0 270,173.0 318,173.0" class="link"/><polygon points="330,173.0 318,167.0 318,179.0" class="link-head"/></svg>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Borrowing in functions</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">fn main() {
+    let text = String::from("hello");
+    let length = length_of(&amp;text);
+    println!("{text} has {length} bytes");
+}
+
+fn length_of(value: &amp;str) -> usize {
+    value.len()
+}</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>hello has 5 bytes</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>The function borrows the text, and ownership stays in <code>main</code>.</li>
+        <li><code>&amp;text</code> is a <code>&amp;String</code>, passed where a <code>&amp;str</code> is expected.</li>
+        <li>A <code>&amp;str</code> parameter accepts both string literals and borrowed <code>String</code>s.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>References are read-only</h2>
+  <pre class="tiny"><code class="lang-error">error[E0596]: cannot borrow `*value` as mutable, as it is behind a `&amp;` reference
+ --> src/main.rs:7:5
+  |
+7 |     value.push_str(", world");
+  |     ^^^^^ `value` is a `&amp;` reference, so the data it refers to cannot be borrowed as mutable
+  |
+help: consider changing this to be a mutable reference
+  |
+6 | fn add_world(value: &amp;mut String) {
+  |                      +++</code></pre>
+  <ul>
+    <li>A <code>&amp;</code> reference can only read the value.</li>
+    <li>To change a borrowed value, you need a <strong>mutable reference</strong>: <code>&amp;mut</code>.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Mutable references</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">fn main() {
+    let mut text = String::from("hello");
+    add_world(&amp;mut text);
+    println!("{text}");
+}
+
+fn add_world(value: &amp;mut String) {
+    value.push_str(", world");
+}</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>hello, world</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>&amp;mut</code> borrows with permission to change the value.</li>
+        <li>The variable must be declared with <code>let mut</code> too.</li>
+        <li>The caller sees the change, and ownership never left <code>main</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>The borrowing rule</h2>
+  <p>At any time, a value can have <strong>either</strong> any number of <code>&amp;</code> references <strong>or</strong> exactly one <code>&amp;mut</code> reference.</p>
+  <table>
+    <tr><th>Borrows, then both used</th><th>Result</th></tr>
+    <tr><td><code>let a = &amp;text;</code> <code>let b = &amp;text;</code></td><td>Compiles: many readers are fine</td></tr>
+    <tr><td><code>let a = &amp;mut text;</code> <code>let b = &amp;mut text;</code></td><td>E0499: <em>cannot borrow <code>text</code> as mutable more than once at a time</em></td></tr>
+    <tr><td><code>let a = &amp;text;</code> <code>let b = &amp;mut text;</code></td><td>E0502: <em>cannot borrow <code>text</code> as mutable because it is also borrowed as immutable</em></td></tr>
+  </table>
+  <p class="spaced">Nobody can change a value while someone else is reading it. That rules out data races at compile time.</p>
+</section>
+
+<section class="slide">
+  <h2>A borrow ends at its last use</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let mut text = String::from("hello");
+let reader = &amp;text;
+println!("{reader}");
+let writer = &amp;mut text;
+writer.push_str(", world");
+println!("{text}");</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>hello
+hello, world</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>A borrow lasts until the reference is used for the last time, not until <code>}</code>.</li>
+        <li><code>reader</code> is done after the first <code>println!</code>, so <code>writer</code> is allowed.</li>
+        <li>The order of uses matters, not where the variables are declared.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>The borrow checker</h2>
+  <pre class="tiny"><code class="lang-error">error[E0499]: cannot borrow `text` as mutable more than once at a time
+ --> src/main.rs:4:18
+  |
+3 |     let first = &amp;mut text;
+  |                 --------- first mutable borrow occurs here
+4 |     let second = &amp;mut text;
+  |                  ^^^^^^^^^ second mutable borrow occurs here
+5 |     println!("{first} {second}");
+  |                ----- first borrow later used here</code></pre>
+  <ul>
+    <li>The <strong>borrow checker</strong> is the part of the compiler that enforces these rules.</li>
+    <li>It guarantees no use after a move, no dangling references and no data races, with no runtime cost.</li>
+    <li>Its errors point to both borrows and to the later use. Fix it by finishing one borrow before starting the other.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Dangling references</h2>
+  <pre class="small"><code class="lang-rust">fn make_greeting() -> &amp;String {
+    let greeting = String::from("hello");
+    &amp;greeting
+}</code></pre>
+  <pre class="tiny"><code class="lang-error">error[E0106]: missing lifetime specifier
+ --> src/main.rs:5:23
+  |
+5 | fn make_greeting() -> &amp;String {
+  |                       ^ expected named lifetime parameter
+  |
+  = help: this function's return type contains a borrowed value, but there is no value for it to be borrowed from
+help: instead, you are more likely to want to return an owned value</code></pre>
+  <ul>
+    <li><code>greeting</code> is dropped when the function ends, so the reference would point to freed memory. The fix: return the <code>String</code> itself.</li>
+  </ul>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 3</div>
+  <h1>Lifetimes</h1>
+  <div class="bar"></div>
+  <div class="subtitle">How long a reference stays valid</div>
+</section>
+
+<section class="slide">
+  <h2>Does not live long enough</h2>
+  <pre class="tiny"><code class="lang-error">error[E0597]: `text` does not live long enough
+ --> src/main.rs:5:21
+  |
+4 |         let text = String::from("hello");
+  |             ---- binding `text` declared here
+5 |         reference = &amp;text;
+  |                     ^^^^^ borrowed value does not live long enough
+6 |     }
+  |     - `text` dropped here while still borrowed
+7 |     println!("{reference}");
+  |                --------- borrow later used here</code></pre>
+  <ul>
+    <li>A <strong>lifetime</strong> is the part of the program where a reference is valid.</li>
+    <li>A reference must never outlive the value it points to.</li>
+    <li>The compiler checks this for every reference.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>When the compiler needs help</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">fn longer(first: &amp;str, second: &amp;str) -> &amp;str {
+    if first.len() >= second.len() {
+        first
+    } else {
+        second
+    }
+}</code></pre>
+      <pre class="tiny"><code class="lang-error">error[E0106]: missing lifetime specifier
+ --> src/main.rs:5:41
+  |
+5 | fn longer(first: &amp;str, second: &amp;str) -> &amp;str {
+  |                  ----          ----     ^ expected named lifetime parameter</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>The result is either <code>first</code> or <code>second</code>. The <code>if</code> decides at runtime (<code>if</code> is covered in chapter 4).</li>
+        <li>The signature doesn't say which input the result borrows from.</li>
+        <li>So the compiler can't check how long the result stays valid.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Lifetime annotations</h2>
+  <pre class="small"><code class="lang-rust">fn longer&lt;'a&gt;(first: &amp;'a str, second: &amp;'a str) -> &amp;'a str {
+    if first.len() >= second.len() {
+        first
+    } else {
+        second
+    }
+}</code></pre>
+  <ul>
+    <li><code>&lt;'a&gt;</code> declares a lifetime named <code>'a</code>. Lifetime names start with <code>'</code>.</li>
+    <li>It reads: the result is valid as long as <strong>both</strong> inputs are still valid.</li>
+    <li>Annotations don't change how long values live. They describe how references relate, so the compiler can check them.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Lifetimes in action</h2>
+  <pre class="tiny"><code class="lang-error">error[E0597]: `inner` does not live long enough
+ --> src/main.rs:6:33
+  |
+5 |         let inner = String::from("short");
+  |             ----- binding `inner` declared here
+6 |         result = longer(&amp;outer, &amp;inner);
+  |                                 ^^^^^^ borrowed value does not live long enough
+7 |     }
+  |     - `inner` dropped here while still borrowed
+8 |     println!("{result}");
+  |                ------ borrow later used here</code></pre>
+  <ul>
+    <li>By the signature, <code>result</code> may point to <code>inner</code>, which is dropped at <code>}</code>.</li>
+    <li>The compiler checks the signature, not which value is longer at runtime.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Elision and <code>'static</code></h2>
+  <div class="columns">
+    <div>
+      <span class="label">Lifetime elision</span>
+      <pre class="small"><code class="lang-rust">fn trimmed(text: &amp;str) -> &amp;str {
+    text.trim()
+}</code></pre>
+      <ul class="compact">
+        <li>With one reference parameter, the compiler assumes the result borrows from it.</li>
+        <li>You only write lifetimes when the compiler can't work them out.</li>
+      </ul>
+    </div>
+    <div>
+      <span class="label command">'static</span>
+      <pre class="small"><code class="lang-rust">let greeting: &amp;'static str = "hello";</code></pre>
+      <ul class="compact">
+        <li><code>'static</code> means valid for the whole run of the program.</li>
+        <li>String literals are stored in the program binary, so every literal is a <code>&amp;'static str</code>.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">Lifetimes in structs are covered in chapter 5.</p>
+</section>
+
+<section class="slide">
+  <h2>Summary</h2>
+  <ul>
+    <li>Every value has exactly one owner, and it's dropped when the owner goes out of scope.</li>
+    <li>Assigning or passing a <code>String</code> moves it. Copy types are copied. <code>.clone()</code> copies explicitly.</li>
+    <li><code>&amp;</code> borrows to read, and <code>&amp;mut</code> borrows to change. Either many <code>&amp;</code> or one <code>&amp;mut</code> at a time.</li>
+    <li>A borrow ends at its last use.</li>
+    <li>A reference can't outlive its value. Lifetime annotations describe how references relate.</li>
+    <li>The borrow checker enforces all of this at compile time.</li>
+  </ul>
+  <p class="note">Next: chapter 4, variables, control flow and macros.</p>
+</section>
+
+</div>
+
+<div class="slides" data-lang="pl">
+
+<section class="slide title-slide">
+  <div class="chapter">Rozdział 3</div>
+  <h1>Własność i referencje</h1>
+  <div class="bar"></div>
+  <div class="subtitle">System własności, borrow checker, referencje, czasy życia</div>
+</section>
+
+<section class="slide">
+  <h2>W tym rozdziale</h2>
+  <ol>
+    <li><strong>Własność</strong>: stos i sterta, <code>String</code>, zasady własności, przeniesienie, kopiowanie, klonowanie</li>
+    <li><strong>Referencje i pożyczanie</strong>: <code>&amp;</code>, <code>&amp;mut</code>, zasady pożyczania, borrow checker</li>
+    <li><strong>Czasy życia</strong>: wiszące referencje, adnotacje czasu życia, <code>'static</code></li>
+  </ol>
+  <p class="note">Kod do tego rozdziału: <code>003-ownership-references/</code></p>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 1</div>
+  <h1>Własność</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Kto zwalnia pamięć i kiedy?</div>
+</section>
+
+<section class="slide">
+  <h2>Kto zwalnia pamięć?</h2>
+  <div class="card"><h3>Ręcznie: C, C++</h3><p>Pamięć zwalnia programista. Zapomni, a pamięć wycieka. Zwolni dwa razy albo użyje po zwolnieniu, a program się wysypie albo stanie się coś gorszego.</p></div>
+  <div class="card"><h3>Garbage collector: Java, Python, Go</h3><p>Środowisko uruchomieniowe znajduje nieużywaną pamięć i ją zwalnia. Bezpiecznie, ale kosztem czasu i pamięci w trakcie działania programu.</p></div>
+  <div class="card"><h3>Własność: Rust</h3><p>Kompilator wie, kiedy każda wartość przestaje być potrzebna, i właśnie tam wstawia jej sprzątanie. Bezpiecznie i bez kosztów w czasie działania.</p></div>
+</section>
+
+<section class="slide">
+  <h2>Stos i sterta</h2>
+  <div class="columns">
+    <div>
+      <pre><code class="lang-rust">let number = 5;
+let text = String::from("hello");</code></pre>
+      <ul class="compact">
+        <li><strong>Stos</strong> (stack): wartości o stałym rozmiarze znanym w czasie kompilacji, jak wszystkie typy z rozdziału 2. Zwalniane automatycznie, gdy funkcja się kończy.</li>
+        <li><strong>Sterta</strong> (heap): dane, których rozmiar jest znany dopiero w czasie działania albo które mogą rosnąć. Trzeba je zwolnić dokładnie raz.</li>
+        <li>Własność to sposób, w jaki Rust decyduje, kiedy zwolnić dane na stercie.</li>
+      </ul>
+    </div>
+    <div>
+      <svg class="diagram" viewBox="0 0 520 240" role="img" aria-label="number leży na stosie; text trzyma na stosie wskaźnik, długość i pojemność, a znaki na stercie"><text x="0" y="10" class="caption">STOS</text><text x="330" y="10" class="caption">STERTA</text><g><rect x="0" y="28" width="230" height="30" class="head"/><text x="12" y="43.0" class="name">number: i32</text><rect x="0" y="58" width="120" height="30" class="cell"/><rect x="120" y="58" width="110" height="30" class="cell"/><text x="12" y="73.0">wartość</text><text x="132" y="73.0">5</text></g><g><rect x="0" y="112" width="230" height="30" class="head"/><text x="12" y="127.0" class="name">text: String</text><rect x="0" y="142" width="120" height="30" class="cell"/><rect x="120" y="142" width="110" height="30" class="cell"/><text x="12" y="157.0">ptr</text><circle cx="175.0" cy="157.0" r="5" class="dot"/><rect x="0" y="172" width="120" height="30" class="cell"/><rect x="120" y="172" width="110" height="30" class="cell"/><text x="12" y="187.0">len</text><text x="132" y="187.0">5</text><rect x="0" y="202" width="120" height="30" class="cell"/><rect x="120" y="202" width="110" height="30" class="cell"/><text x="12" y="217.0">capacity</text><text x="132" y="217.0">5</text></g><g><rect x="330" y="137.0" width="36" height="40" class="heap-cell"/><text x="348.0" y="157.0" text-anchor="middle">h</text><rect x="366" y="137.0" width="36" height="40" class="heap-cell"/><text x="384.0" y="157.0" text-anchor="middle">e</text><rect x="402" y="137.0" width="36" height="40" class="heap-cell"/><text x="420.0" y="157.0" text-anchor="middle">l</text><rect x="438" y="137.0" width="36" height="40" class="heap-cell"/><text x="456.0" y="157.0" text-anchor="middle">l</text><rect x="474" y="137.0" width="36" height="40" class="heap-cell"/><text x="492.0" y="157.0" text-anchor="middle">o</text></g><path d="M175.0,157.0 C255.0,157.0 270,157.0 318,157.0" class="link"/><polygon points="330,157.0 318,151.0 318,163.0" class="link-head"/></svg>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>String</code>: tekst na stercie</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let literal: &amp;str = "hello";
+let mut owned = String::from("hello");
+owned.push_str(", world");
+println!("{literal} / {owned} / {}", owned.len());</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>hello / hello, world / 12</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>String::from</code> tworzy tekst, którego zmienna jest <strong>właścicielem</strong>.</li>
+        <li><code>push_str</code> dopisuje tekst. <code>String</code> rośnie na stercie.</li>
+        <li><code>let mut</code> pozwala zmieniać zmienną. Modyfikowalność omówimy w rozdziale 4.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>&amp;str</code> a <code>String</code></h2>
+  <table>
+    <tr><th></th><th><code>&amp;str</code> (literał)</th><th><code>String</code></th></tr>
+    <tr><td>Jest właścicielem tekstu</td><td>Nie, to referencja</td><td>Tak</td></tr>
+    <tr><td>Gdzie jest tekst</td><td>W pliku programu</td><td>Na stercie</td></tr>
+    <tr><td>Może rosnąć i się zmieniać</td><td>Nie</td><td>Tak, z <code>mut</code></td></tr>
+    <tr><td>Tworzenie</td><td><code>"text"</code></td><td><code>String::from("text")</code></td></tr>
+  </table>
+  <ul class="spaced">
+    <li><code>&amp;String</code> można przekazać tam, gdzie oczekiwany jest <code>&amp;str</code>. Zobaczymy to w części 2.</li>
+  </ul>
+  <p class="note">Resztę o <code>String</code> omówimy w rozdziale 5.</p>
+</section>
+
+<section class="slide">
+  <h2>Zasady własności</h2>
+  <div class="columns">
+    <div>
+      <ol>
+        <li>Każda wartość ma <strong>właściciela</strong>.</li>
+        <li>W danej chwili jest tylko <strong>jeden właściciel</strong>.</li>
+        <li>Gdy właściciel wychodzi z zasięgu, wartość jest <strong>usuwana</strong> (drop).</li>
+      </ol>
+    </div>
+    <div>
+      <pre><code class="lang-rust">{
+    let text = String::from("hello");
+    println!("{text}");
+}</code></pre>
+      <ul class="compact">
+        <li><code>text</code> jest dostępne od <code>let</code> do zamykającego <code>}</code>.</li>
+        <li>Przy <code>}</code> Rust usuwa <code>text</code> i zwalnia jego pamięć na stercie.</li>
+        <li>Użycie <code>text</code> po <code>}</code> kończy się błędem: <em>cannot find value <code>text</code> in this scope</em>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Przeniesienie (move)</h2>
+  <div class="columns">
+    <div>
+      <pre><code class="lang-rust">let first = String::from("hello");
+let second = first;
+println!("{second}");</code></pre>
+      <ul class="compact">
+        <li><code>let second = first;</code> kopiuje tylko wskaźnik, długość i pojemność. Tekst na stercie nie jest kopiowany.</li>
+        <li>Własność <strong>przechodzi</strong> na <code>second</code>, a <code>first</code> nie nadaje się już do użycia.</li>
+        <li>W przeciwnym razie obie zmienne zwolniłyby tę samą pamięć przy <code>}</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <svg class="diagram" viewBox="0 0 520 300" role="img" aria-label="po przeniesieniu second wskazuje tekst na stercie, a first nie nadaje się już do użycia"><text x="0" y="10" class="caption">STOS</text><text x="330" y="10" class="caption">STERTA</text><g class="faded"><rect x="0" y="28" width="230" height="30" class="head"/><text x="12" y="43.0" class="name">first</text><rect x="0" y="58" width="120" height="30" class="cell"/><rect x="120" y="58" width="110" height="30" class="cell"/><text x="12" y="73.0">ptr</text><circle cx="175.0" cy="73.0" r="5" class="dot"/><rect x="0" y="88" width="120" height="30" class="cell"/><rect x="120" y="88" width="110" height="30" class="cell"/><text x="12" y="103.0">len</text><text x="132" y="103.0">5</text><rect x="0" y="118" width="120" height="30" class="cell"/><rect x="120" y="118" width="110" height="30" class="cell"/><text x="12" y="133.0">capacity</text><text x="132" y="133.0">5</text></g><g><rect x="0" y="168" width="230" height="30" class="head"/><text x="12" y="183.0" class="name">second</text><rect x="0" y="198" width="120" height="30" class="cell"/><rect x="120" y="198" width="110" height="30" class="cell"/><text x="12" y="213.0">ptr</text><circle cx="175.0" cy="213.0" r="5" class="dot"/><rect x="0" y="228" width="120" height="30" class="cell"/><rect x="120" y="228" width="110" height="30" class="cell"/><text x="12" y="243.0">len</text><text x="132" y="243.0">5</text><rect x="0" y="258" width="120" height="30" class="cell"/><rect x="120" y="258" width="110" height="30" class="cell"/><text x="12" y="273.0">capacity</text><text x="132" y="273.0">5</text></g><g><rect x="330" y="123" width="36" height="40" class="heap-cell"/><text x="348.0" y="143.0" text-anchor="middle">h</text><rect x="366" y="123" width="36" height="40" class="heap-cell"/><text x="384.0" y="143.0" text-anchor="middle">e</text><rect x="402" y="123" width="36" height="40" class="heap-cell"/><text x="420.0" y="143.0" text-anchor="middle">l</text><rect x="438" y="123" width="36" height="40" class="heap-cell"/><text x="456.0" y="143.0" text-anchor="middle">l</text><rect x="474" y="123" width="36" height="40" class="heap-cell"/><text x="492.0" y="143.0" text-anchor="middle">o</text></g><g class="faded"><path d="M175.0,73.0 C265.0,73.0 260,135 318,135" class="link dashed"/><polygon points="330,135 318,129 318,141" class="link-head"/></g><path d="M175.0,213.0 C265.0,213.0 260,151 318,151" class="link"/><polygon points="330,151 318,145 318,157" class="link-head"/></svg>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Użycie przeniesionej wartości</h2>
+  <pre class="tiny"><code class="lang-error">error[E0382]: borrow of moved value: `first`
+ --> src/main.rs:4:16
+  |
+2 |     let first = String::from("hello");
+  |         ----- move occurs because `first` has type `String`, which does not implement the `Copy` trait
+3 |     let second = first;
+  |                  ----- value moved here
+4 |     println!("{first} {second}");
+  |                ^^^^^ value borrowed here after move
+  |
+help: consider cloning the value if the performance cost is acceptable
+  |
+3 |     let second = first.clone();
+  |                       ++++++++</code></pre>
+  <ul>
+    <li>Kompilator pokazuje, gdzie wartość została przeniesiona i gdzie jest użyta potem.</li>
+    <li>Podpowiada też poprawkę: <code>.clone()</code>.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Kopiowanie i klonowanie</h2>
+  <div class="columns">
+    <div>
+      <span class="label">Copy</span>
+      <pre><code class="lang-rust">let x = 5;
+let y = x;
+println!("{x} {y}");</code></pre>
+      <ul class="compact">
+        <li>Wartości, które żyją tylko na stosie, są <strong>kopiowane</strong>, a obie zmienne zostają do użycia.</li>
+        <li>Typy Copy: liczby całkowite i zmiennoprzecinkowe, <code>bool</code>, <code>char</code> oraz zbudowane z nich krotki i tablice.</li>
+      </ul>
+    </div>
+    <div>
+      <span class="label">Clone</span>
+      <pre><code class="lang-rust">let original = String::from("hello");
+let copy = original.clone();
+println!("{original} {copy}");</code></pre>
+      <ul class="compact">
+        <li><code>.clone()</code> kopiuje też dane ze sterty, więc każda zmienna ma własny tekst.</li>
+        <li>To może być kosztowne, dlatego Rust każe zapisać to jawnie.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Własność a funkcje</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">fn main() {
+    let text = String::from("hello");
+    take_ownership(text);
+    let returned = give_back(String::from("hi"));
+    println!("{returned}");
+}
+
+fn take_ownership(value: String) {
+    println!("{value}");
+}
+
+fn give_back(value: String) -> String {
+    value
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>Przekazanie <code>String</code> do funkcji <strong>przenosi</strong> go do parametru.</li>
+        <li><code>value</code> jest usuwane na końcu <code>take_ownership</code>. Późniejsze użycie <code>text</code> kończy się błędem E0382.</li>
+        <li>Zwrócenie wartości przenosi własność z powrotem do wywołującego.</li>
+        <li>Typy Copy, takie jak <code>i32</code>, są do funkcji kopiowane.</li>
+        <li>Przekazywanie własności tam i z powrotem jest uciążliwe. Rozwiązaniem są referencje.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 2</div>
+  <h1>Referencje i pożyczanie</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Używanie wartości bez przejmowania własności</div>
+</section>
+
+<section class="slide">
+  <h2>Referencje</h2>
+  <div class="columns">
+    <div>
+      <pre><code class="lang-rust">let text = String::from("hello");
+let borrowed = &amp;text;
+println!("{borrowed} {text}");</code></pre>
+      <ul class="compact">
+        <li><code>&amp;text</code> tworzy <strong>referencję</strong>: wskazuje wartość, ale nie jest jej właścicielem.</li>
+        <li>Tworzenie referencji nazywamy <strong>pożyczaniem</strong> (borrowing).</li>
+        <li><code>text</code> pozostaje właścicielem i dalej można go używać.</li>
+        <li>Gdy <code>borrowed</code> wychodzi z zasięgu, nic nie jest zwalniane.</li>
+      </ul>
+    </div>
+    <div>
+      <svg class="diagram" viewBox="0 0 520 258" role="img" aria-label="borrowed wskazuje na text, który wskazuje swoje znaki na stercie"><text x="0" y="10" class="caption">STOS</text><text x="330" y="10" class="caption">STERTA</text><g><rect x="0" y="28" width="230" height="30" class="head"/><text x="12" y="43.0" class="name">borrowed: &amp;String</text><rect x="0" y="58" width="120" height="30" class="cell"/><rect x="120" y="58" width="110" height="30" class="cell"/><text x="12" y="73.0">ptr</text><circle cx="175.0" cy="73.0" r="5" class="dot"/></g><g><rect x="0" y="128" width="230" height="30" class="head"/><text x="12" y="143.0" class="name">text: String</text><rect x="0" y="158" width="120" height="30" class="cell"/><rect x="120" y="158" width="110" height="30" class="cell"/><text x="12" y="173.0">ptr</text><circle cx="175.0" cy="173.0" r="5" class="dot"/><rect x="0" y="188" width="120" height="30" class="cell"/><rect x="120" y="188" width="110" height="30" class="cell"/><text x="12" y="203.0">len</text><text x="132" y="203.0">5</text><rect x="0" y="218" width="120" height="30" class="cell"/><rect x="120" y="218" width="110" height="30" class="cell"/><text x="12" y="233.0">capacity</text><text x="132" y="233.0">5</text></g><g><rect x="330" y="153.0" width="36" height="40" class="heap-cell"/><text x="348.0" y="173.0" text-anchor="middle">h</text><rect x="366" y="153.0" width="36" height="40" class="heap-cell"/><text x="384.0" y="173.0" text-anchor="middle">e</text><rect x="402" y="153.0" width="36" height="40" class="heap-cell"/><text x="420.0" y="173.0" text-anchor="middle">l</text><rect x="438" y="153.0" width="36" height="40" class="heap-cell"/><text x="456.0" y="173.0" text-anchor="middle">l</text><rect x="474" y="153.0" width="36" height="40" class="heap-cell"/><text x="492.0" y="173.0" text-anchor="middle">o</text></g><path d="M175.0,73.0 C285.0,73.0 290,143.0 244,143.0" class="link"/><polygon points="232,143.0 244,137.0 244,149.0" class="link-head"/><path d="M175.0,173.0 C255.0,173.0 270,173.0 318,173.0" class="link"/><polygon points="330,173.0 318,167.0 318,179.0" class="link-head"/></svg>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Pożyczanie w funkcjach</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">fn main() {
+    let text = String::from("hello");
+    let length = length_of(&amp;text);
+    println!("{text} has {length} bytes");
+}
+
+fn length_of(value: &amp;str) -> usize {
+    value.len()
+}</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>hello has 5 bytes</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>Funkcja pożycza tekst, a własność zostaje w <code>main</code>.</li>
+        <li><code>&amp;text</code> to <code>&amp;String</code>, przekazany tam, gdzie oczekiwany jest <code>&amp;str</code>.</li>
+        <li>Parametr <code>&amp;str</code> przyjmuje zarówno literały, jak i pożyczone <code>String</code>i.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Referencje są tylko do odczytu</h2>
+  <pre class="tiny"><code class="lang-error">error[E0596]: cannot borrow `*value` as mutable, as it is behind a `&amp;` reference
+ --> src/main.rs:7:5
+  |
+7 |     value.push_str(", world");
+  |     ^^^^^ `value` is a `&amp;` reference, so the data it refers to cannot be borrowed as mutable
+  |
+help: consider changing this to be a mutable reference
+  |
+6 | fn add_world(value: &amp;mut String) {
+  |                      +++</code></pre>
+  <ul>
+    <li>Referencja <code>&amp;</code> pozwala tylko odczytać wartość.</li>
+    <li>Żeby zmienić pożyczoną wartość, potrzebna jest <strong>referencja modyfikowalna</strong>: <code>&amp;mut</code>.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Referencje modyfikowalne</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">fn main() {
+    let mut text = String::from("hello");
+    add_world(&amp;mut text);
+    println!("{text}");
+}
+
+fn add_world(value: &amp;mut String) {
+    value.push_str(", world");
+}</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>hello, world</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>&amp;mut</code> pożycza z prawem do zmiany wartości.</li>
+        <li>Zmienna też musi być zadeklarowana jako <code>let mut</code>.</li>
+        <li>Wywołujący widzi zmianę, a własność nigdy nie opuściła <code>main</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Zasada pożyczania</h2>
+  <p>W danej chwili wartość może mieć <strong>albo</strong> dowolnie wiele referencji <code>&amp;</code>, <strong>albo</strong> dokładnie jedną referencję <code>&amp;mut</code>.</p>
+  <table>
+    <tr><th>Pożyczenia, potem użycie obu</th><th>Wynik</th></tr>
+    <tr><td><code>let a = &amp;text;</code> <code>let b = &amp;text;</code></td><td>Kompiluje się: wielu czytających to nie problem</td></tr>
+    <tr><td><code>let a = &amp;mut text;</code> <code>let b = &amp;mut text;</code></td><td>E0499: <em>cannot borrow <code>text</code> as mutable more than once at a time</em></td></tr>
+    <tr><td><code>let a = &amp;text;</code> <code>let b = &amp;mut text;</code></td><td>E0502: <em>cannot borrow <code>text</code> as mutable because it is also borrowed as immutable</em></td></tr>
+  </table>
+  <p class="spaced">Nikt nie może zmieniać wartości, gdy ktoś inny ją czyta. To wyklucza wyścigi danych już podczas kompilacji.</p>
+</section>
+
+<section class="slide">
+  <h2>Pożyczenie kończy się przy ostatnim użyciu</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let mut text = String::from("hello");
+let reader = &amp;text;
+println!("{reader}");
+let writer = &amp;mut text;
+writer.push_str(", world");
+println!("{text}");</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>hello
+hello, world</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>Pożyczenie trwa do ostatniego użycia referencji, a nie do <code>}</code>.</li>
+        <li><code>reader</code> kończy pracę po pierwszym <code>println!</code>, więc <code>writer</code> jest dozwolony.</li>
+        <li>Liczy się kolejność użyć, a nie miejsce deklaracji zmiennych.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Borrow checker</h2>
+  <pre class="tiny"><code class="lang-error">error[E0499]: cannot borrow `text` as mutable more than once at a time
+ --> src/main.rs:4:18
+  |
+3 |     let first = &amp;mut text;
+  |                 --------- first mutable borrow occurs here
+4 |     let second = &amp;mut text;
+  |                  ^^^^^^^^^ second mutable borrow occurs here
+5 |     println!("{first} {second}");
+  |                ----- first borrow later used here</code></pre>
+  <ul>
+    <li><strong>Borrow checker</strong> to część kompilatora, która pilnuje tych zasad.</li>
+    <li>Gwarantuje brak użycia po przeniesieniu, brak wiszących referencji i brak wyścigów danych, bez kosztów w czasie działania.</li>
+    <li>Jego błędy wskazują oba pożyczenia i późniejsze użycie. Poprawka: zakończ jedno pożyczenie, zanim zaczniesz drugie.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Wiszące referencje</h2>
+  <pre class="small"><code class="lang-rust">fn make_greeting() -> &amp;String {
+    let greeting = String::from("hello");
+    &amp;greeting
+}</code></pre>
+  <pre class="tiny"><code class="lang-error">error[E0106]: missing lifetime specifier
+ --> src/main.rs:5:23
+  |
+5 | fn make_greeting() -> &amp;String {
+  |                       ^ expected named lifetime parameter
+  |
+  = help: this function's return type contains a borrowed value, but there is no value for it to be borrowed from
+help: instead, you are more likely to want to return an owned value</code></pre>
+  <ul>
+    <li><code>greeting</code> jest usuwane, gdy funkcja się kończy, więc referencja wskazywałaby zwolnioną pamięć. Poprawka: zwróć sam <code>String</code>.</li>
+  </ul>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 3</div>
+  <h1>Czasy życia</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Jak długo referencja pozostaje ważna</div>
+</section>
+
+<section class="slide">
+  <h2>Wartość żyje za krótko</h2>
+  <pre class="tiny"><code class="lang-error">error[E0597]: `text` does not live long enough
+ --> src/main.rs:5:21
+  |
+4 |         let text = String::from("hello");
+  |             ---- binding `text` declared here
+5 |         reference = &amp;text;
+  |                     ^^^^^ borrowed value does not live long enough
+6 |     }
+  |     - `text` dropped here while still borrowed
+7 |     println!("{reference}");
+  |                --------- borrow later used here</code></pre>
+  <ul>
+    <li><strong>Czas życia</strong> (lifetime) to fragment programu, w którym referencja jest ważna.</li>
+    <li>Referencja nigdy nie może żyć dłużej niż wartość, którą wskazuje.</li>
+    <li>Kompilator sprawdza to dla każdej referencji.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Kiedy kompilator potrzebuje pomocy</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">fn longer(first: &amp;str, second: &amp;str) -> &amp;str {
+    if first.len() >= second.len() {
+        first
+    } else {
+        second
+    }
+}</code></pre>
+      <pre class="tiny"><code class="lang-error">error[E0106]: missing lifetime specifier
+ --> src/main.rs:5:41
+  |
+5 | fn longer(first: &amp;str, second: &amp;str) -> &amp;str {
+  |                  ----          ----     ^ expected named lifetime parameter</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>Wynikiem jest <code>first</code> albo <code>second</code>. Decyduje o tym <code>if</code> w czasie działania (<code>if</code> omówimy w rozdziale 4).</li>
+        <li>Sygnatura nie mówi, od którego argumentu wynik jest pożyczony.</li>
+        <li>Kompilator nie może więc sprawdzić, jak długo wynik jest ważny.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Adnotacje czasu życia</h2>
+  <pre class="small"><code class="lang-rust">fn longer&lt;'a&gt;(first: &amp;'a str, second: &amp;'a str) -> &amp;'a str {
+    if first.len() >= second.len() {
+        first
+    } else {
+        second
+    }
+}</code></pre>
+  <ul>
+    <li><code>&lt;'a&gt;</code> deklaruje czas życia o nazwie <code>'a</code>. Nazwy czasów życia zaczynają się od <code>'</code>.</li>
+    <li>Czytamy to tak: wynik jest ważny, dopóki <strong>oba</strong> argumenty są ważne.</li>
+    <li>Adnotacje nie zmieniają tego, jak długo żyją wartości. Opisują zależności między referencjami, żeby kompilator mógł je sprawdzić.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Czasy życia w praktyce</h2>
+  <pre class="tiny"><code class="lang-error">error[E0597]: `inner` does not live long enough
+ --> src/main.rs:6:33
+  |
+5 |         let inner = String::from("short");
+  |             ----- binding `inner` declared here
+6 |         result = longer(&amp;outer, &amp;inner);
+  |                                 ^^^^^^ borrowed value does not live long enough
+7 |     }
+  |     - `inner` dropped here while still borrowed
+8 |     println!("{result}");
+  |                ------ borrow later used here</code></pre>
+  <ul>
+    <li>Według sygnatury <code>result</code> może wskazywać na <code>inner</code>, które jest usuwane przy <code>}</code>.</li>
+    <li>Kompilator sprawdza sygnaturę, a nie to, która wartość jest dłuższa w czasie działania.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Pomijanie czasów życia i <code>'static</code></h2>
+  <div class="columns">
+    <div>
+      <span class="label">Pomijanie (elision)</span>
+      <pre class="small"><code class="lang-rust">fn trimmed(text: &amp;str) -> &amp;str {
+    text.trim()
+}</code></pre>
+      <ul class="compact">
+        <li>Przy jednym parametrze-referencji kompilator zakłada, że wynik jest pożyczony od niego.</li>
+        <li>Czasy życia zapisujesz tylko wtedy, gdy kompilator sam ich nie ustali.</li>
+      </ul>
+    </div>
+    <div>
+      <span class="label command">'static</span>
+      <pre class="small"><code class="lang-rust">let greeting: &amp;'static str = "hello";</code></pre>
+      <ul class="compact">
+        <li><code>'static</code> oznacza: ważne przez cały czas działania programu.</li>
+        <li>Literały napisowe są zapisane w pliku programu, więc każdy literał to <code>&amp;'static str</code>.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">Czasy życia w strukturach omówimy w rozdziale 5.</p>
+</section>
+
+<section class="slide">
+  <h2>Podsumowanie</h2>
+  <ul>
+    <li>Każda wartość ma dokładnie jednego właściciela i jest usuwana, gdy właściciel wychodzi z zasięgu.</li>
+    <li>Przypisanie lub przekazanie <code>String</code> go przenosi. Typy Copy są kopiowane. <code>.clone()</code> kopiuje jawnie.</li>
+    <li><code>&amp;</code> pożycza do odczytu, a <code>&amp;mut</code> do zmiany. W danej chwili albo wiele <code>&amp;</code>, albo jedna <code>&amp;mut</code>.</li>
+    <li>Pożyczenie kończy się przy ostatnim użyciu.</li>
+    <li>Referencja nie może żyć dłużej niż jej wartość. Adnotacje czasu życia opisują zależności między referencjami.</li>
+    <li>Borrow checker pilnuje tego wszystkiego podczas kompilacji.</li>
+  </ul>
+  <p class="note">Dalej: rozdział 4, zmienne, sterowanie przepływem i makra.</p>
+</section>
+
+</div>
+
+</div>
+</div>
+<script src="assets/deck.js"></script>
+</body>
+</html>

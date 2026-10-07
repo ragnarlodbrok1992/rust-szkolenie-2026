@@ -25,16 +25,18 @@
       "(\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/)" +
       '|("(?:\\\\.|[^"\\\\])*")' +
       "|('(?:\\\\.|[^'\\\\])')" +
+      "|('[a-z_][a-z0-9_]*)(?!')" +
       "|\\b(" + rustKeywords + ")\\b" +
       "|\\b([a-z_][a-z0-9_]*!)" +
       "|\\b(" + rustNumber + ")\\b" +
       "|\\b(" + rustPrimitives + "|[A-Z][A-Za-z0-9_]*)\\b",
       "gu"
     );
-    return source.replace(pattern, function (match, comment, string, character, keyword, macro, number, type) {
+    return source.replace(pattern, function (match, comment, string, character, lifetime, keyword, macro, number, type) {
       if (comment) return wrap("tok-comment", comment);
       if (string) return wrap("tok-string", string);
       if (character) return wrap("tok-string", character);
+      if (lifetime) return wrap("tok-lifetime", lifetime);
       if (keyword) return wrap("tok-keyword", keyword);
       if (macro) return wrap("tok-macro", macro);
       if (number) return wrap("tok-number", number);

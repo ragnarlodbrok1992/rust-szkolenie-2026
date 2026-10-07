@@ -335,9 +335,10 @@ for (index, word) in words.iter().enumerate() {
   <div class="columns">
     <div>
       <span class="label">Values and output</span>
-      <pre class="small output"><code>doubled: [2, 4, 6, 8]  total: 10
-long_count: 2
-0: apple  1: fig  2: banana</code></pre>
+      <pre class="tiny output"><code>doubled: [2, 4, 6, 8]  total: 10  long_count: 2
+0: apple
+1: fig
+2: banana</code></pre>
     </div>
     <div>
       <ul class="compact">
@@ -603,17 +604,12 @@ println!("{} ({})", user.greeting(), user.age);</code></pre>
       <pre class="small"><code class="lang-rust">struct Excerpt&lt;'a&gt; {
     text: &amp;'a str,
 }
-
 let novel = String::from("Call me Ishmael. Some years ago...");
 let first_sentence = &amp;novel[..16];
-let excerpt = Excerpt { text: first_sentence };
+let excerpt = Excerpt {
+    text: first_sentence,
+};
 println!("{}", excerpt.text);</code></pre>
-      <span class="label">Without a lifetime</span>
-      <pre class="tiny"><code class="lang-error">error[E0106]: missing lifetime specifier
- --> src/main.rs:2:11
-  |
-2 |     text: &amp;str,
-  |           ^ expected named lifetime parameter</code></pre>
     </div>
     <div>
       <ul class="compact">
@@ -623,6 +619,12 @@ println!("{}", excerpt.text);</code></pre>
       </ul>
     </div>
   </div>
+  <span class="label">Without a lifetime</span>
+  <pre class="tiny"><code class="lang-error">error[E0106]: missing lifetime specifier
+ --> src/main.rs:2:11
+  |
+2 |     text: &amp;str,
+  |           ^ expected named lifetime parameter</code></pre>
 </section>
 
 <section class="slide title-slide">
@@ -1092,9 +1094,10 @@ for (index, word) in words.iter().enumerate() {
   <div class="columns">
     <div>
       <span class="label">Wartości i wynik</span>
-      <pre class="small output"><code>doubled: [2, 4, 6, 8]  total: 10
-long_count: 2
-0: apple  1: fig  2: banana</code></pre>
+      <pre class="tiny output"><code>doubled: [2, 4, 6, 8]  total: 10  long_count: 2
+0: apple
+1: fig
+2: banana</code></pre>
     </div>
     <div>
       <ul class="compact">
@@ -1360,26 +1363,27 @@ println!("{} ({})", user.greeting(), user.age);</code></pre>
       <pre class="small"><code class="lang-rust">struct Excerpt&lt;'a&gt; {
     text: &amp;'a str,
 }
-
 let novel = String::from("Call me Ishmael. Some years ago...");
 let first_sentence = &amp;novel[..16];
-let excerpt = Excerpt { text: first_sentence };
+let excerpt = Excerpt {
+    text: first_sentence,
+};
 println!("{}", excerpt.text);</code></pre>
-      <span class="label">Bez czasu życia</span>
-      <pre class="tiny"><code class="lang-error">error[E0106]: missing lifetime specifier
+    </div>
+    <div>
+      <ul class="compact">
+        <li>Struktura z referencją potrzebuje czasu życia, co dopełnia rozdział 3.</li>
+        <li><code>Excerpt&lt;'a&gt;</code> mówi: fragment nie może żyć dłużej niż tekst, który pożycza.</li>
+        <li>Zwykle lepiej wybrać pola posiadane (<code>String</code>).</li>
+      </ul>
+    </div>
+  </div>
+  <span class="label">Bez czasu życia</span>
+  <pre class="tiny"><code class="lang-error">error[E0106]: missing lifetime specifier
  --> src/main.rs:2:11
   |
 2 |     text: &amp;str,
   |           ^ expected named lifetime parameter</code></pre>
-    </div>
-    <div>
-      <ul class="compact">
-        <li>Struktura, która trzyma referencję, potrzebuje czasu życia. To dopełnienie rozdziału 3.</li>
-        <li><code>Excerpt&lt;'a&gt;</code> mówi: fragment nie może żyć dłużej niż tekst, który pożycza.</li>
-        <li>Wybieraj pola posiadane (<code>String</code>), chyba że masz powód, by pożyczać.</li>
-      </ul>
-    </div>
-  </div>
 </section>
 
 <section class="slide title-slide">

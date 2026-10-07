@@ -137,7 +137,7 @@ fn iterators() {
     let total: i32 = numbers.iter().sum();
     let words = ["apple", "fig", "banana"];
     let long_count = words.iter().filter(|word| word.len() > 3).count();
-    println!("{doubled:?} {total} {long_count}");
+    println!("doubled: {doubled:?}  total: {total}  long_count: {long_count}");
     for (index, word) in words.iter().enumerate() {
         println!("{index}: {word}");
     }
@@ -188,13 +188,13 @@ fn structs() {
     println!("{user:?}");
     println!("{user:#?}");
 
-    let mut changed = User {
+    let mut user = User {
         name: String::from("Alice"),
         age: 30,
         active: true,
     };
-    changed.age += 1;
-    println!("{} {}", changed.age, changed.active);
+    user.age += 1;
+    println!("{} {}", user.age, user.active);
 
     let built = new_user(String::from("Bob"), 25);
     println!("{} {}", built.name, built.age);

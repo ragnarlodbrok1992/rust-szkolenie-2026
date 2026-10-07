@@ -1,0 +1,1515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Advanced concepts and testing</title>
+<link rel="stylesheet" href="assets/deck.css">
+</head>
+<body>
+<div class="viewport">
+<div class="deck" id="deck">
+
+<div class="slides" data-lang="en">
+
+<section class="slide title-slide">
+  <div class="chapter">Chapter 6</div>
+  <h1>Advanced concepts and testing</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Generics, traits, error handling and effective tests</div>
+</section>
+
+<section class="slide">
+  <h2>In this chapter</h2>
+  <ol>
+    <li><strong>Generics</strong>: one piece of code for many types</li>
+    <li><strong>Traits</strong>: shared behavior, standard traits, <code>derive</code>, <code>dyn</code></li>
+    <li><strong>Error handling</strong>: <code>Result</code>, <code>?</code>, your own error types</li>
+    <li><strong>Testing</strong>: <code>#[test]</code>, assertions, <code>cargo test</code>, effective tests</li>
+  </ol>
+  <p class="note">Code for this chapter: <code>006-advanced-concepts-tests/</code>. Try both <code>cargo run</code> and <code>cargo test</code>.</p>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 1</div>
+  <h1>Generics</h1>
+  <div class="bar"></div>
+  <div class="subtitle">One piece of code for many types</div>
+</section>
+
+<section class="slide">
+  <h2>The problem: duplicated code</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">fn largest_i32(items: &amp;[i32]) -> &amp;i32 {
+    let mut largest = &amp;items[0];
+    for item in items {
+        if item &gt; largest {
+            largest = item;
+        }
+    }
+    largest
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>This finds the largest number in a slice.</li>
+        <li>To do the same for letters, you'd write <code>largest_char</code> with the same body, changing only <code>i32</code> to <code>char</code>.</li>
+        <li>Two copies means every bug has to be fixed twice.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>A generic function</h2>
+  <p>The same body, with the type as a parameter <code>&lt;T&gt;</code>:</p>
+  <pre class="tiny"><code class="lang-error">error[E0369]: binary operation `&gt;` cannot be applied to type `&amp;T`
+  --> src/main.rs:17:17
+   |
+17 |         if item &gt; largest {
+   |            ---- ^ ------- &amp;T
+   |            |
+   |            &amp;T
+   |
+help: consider restricting type parameter `T` with trait `PartialOrd`
+   |
+14 | fn largest_without_bound&lt;T: std::cmp::PartialOrd&gt;(items: &amp;[T]) -> &amp;T {
+   |                           ++++++++++++++++++++++</code></pre>
+  <ul>
+    <li><code>&lt;T&gt;</code> declares a <strong>type parameter</strong>: "some type, chosen by the caller".</li>
+    <li>Not every type can be compared with <code>&gt;</code>, so the compiler refuses. Its help shows the fix.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Trait bounds</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">fn largest&lt;T: PartialOrd&gt;(items: &amp;[T]) -> &amp;T {
+    let mut largest = &amp;items[0];
+    for item in items {
+        if item &gt; largest {
+            largest = item;
+        }
+    }
+    largest
+}
+
+let numbers = [34, 50, 25, 100, 65];
+let letters = ['y', 'm', 'a', 'q'];
+println!("{} {}", largest(&amp;numbers), largest(&amp;letters));</code></pre>
+    </div>
+    <div>
+      <span class="label">Output</span>
+      <pre class="small output"><code>100 y</code></pre>
+      <ul class="compact">
+        <li><code>T: PartialOrd</code> is a <strong>trait bound</strong>: any type that can be compared.</li>
+        <li>One function now works for <code>i32</code>, <code>char</code> and any other comparable type.</li>
+        <li>No runtime cost: the compiler generates a separate copy for each type you use.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Generic structs</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">struct Point&lt;T&gt; {
+    x: T,
+    y: T,
+}
+
+impl&lt;T&gt; Point&lt;T&gt; {
+    fn x(&amp;self) -> &amp;T {
+        &amp;self.x
+    }
+}
+
+let integer_point = Point { x: 5, y: 10 };
+let float_point = Point { x: 1.0, y: 4.0 };</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>Structs and enums can have type parameters too.</li>
+        <li><code>impl&lt;T&gt;</code> writes methods once for every <code>Point&lt;T&gt;</code>.</li>
+        <li>Both fields share one <code>T</code>, so <code>Point { x: 5, y: 4.0 }</code> fails: <em>E0308 expected integer, found floating-point number</em>.</li>
+        <li><code>Option&lt;T&gt;</code> and <code>Result&lt;T, E&gt;</code> are generic enums like this.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 2</div>
+  <h1>Traits</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Behavior that different types share</div>
+</section>
+
+<section class="slide">
+  <h2>Defining and implementing a trait</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">trait Describe {
+    fn describe(&amp;self) -> String;
+}
+
+struct Dog {
+    name: String,
+}
+
+impl Describe for Dog {
+    fn describe(&amp;self) -> String {
+        format!("{} the dog", self.name)
+    }
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>A <strong>trait</strong> lists methods that a type promises to provide.</li>
+        <li><code>impl Describe for Dog</code> keeps that promise for <code>Dog</code>.</li>
+        <li>Leave a method out and you get <em>E0046 not all trait items implemented, missing: <code>describe</code></em>.</li>
+        <li>Traits are like interfaces in other languages.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Enums and default methods</h2>
+  <div class="columns columns-wider-left">
+    <div>
+      <pre class="small"><code class="lang-rust">impl Describe for Weather {
+    fn describe(&amp;self) -> String {
+        match self {
+            Weather::Sunny =&gt; String::from("a sunny day"),
+            Weather::Rainy =&gt; String::from("a rainy day"),
+        }
+    }
+}</code></pre>
+      <ul class="compact">
+        <li>Any type can implement a trait, enums included.</li>
+      </ul>
+    </div>
+    <div>
+      <pre class="tiny"><code class="lang-rust">trait Describe {
+    fn describe(&amp;self) -> String;
+
+    fn shout(&amp;self) -> String {
+        self.describe().to_uppercase()
+    }
+}</code></pre>
+      <span class="label command">Weather::Rainy.shout()</span>
+      <pre class="small output"><code>A RAINY DAY</code></pre>
+      <ul class="compact">
+        <li>A <strong>default method</strong> has a body in the trait. Types get it for free, and can override it.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Traits as parameters</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">fn print_description(item: &amp;impl Describe) {
+    println!("{}", item.describe());
+}
+
+fn print_twice&lt;T: Describe&gt;(item: &amp;T) {
+    println!("{} / {}", item.describe(), item.shout());
+}
+
+fn print_and_copy&lt;T&gt;(item: &amp;T) -> T
+where
+    T: Describe + Clone,
+{
+    println!("{}", item.describe());
+    item.clone()
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>&amp;impl Describe</code> accepts any type that implements the trait.</li>
+        <li><code>&lt;T: Describe&gt;</code> says the same thing in longer form.</li>
+        <li><code>+</code> requires several traits.</li>
+        <li><code>where</code> moves long bounds out of the signature.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>Display</code>: printing with <code>{}</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">use std::fmt;
+
+struct Temperature {
+    degrees: f64,
+}
+
+impl fmt::Display for Temperature {
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:.1}°C", self.degrees)
+    }
+}
+
+let temperature = Temperature { degrees: 21.456 };
+println!("{temperature}");</code></pre>
+    </div>
+    <div>
+      <span class="label">Output</span>
+      <pre class="small output"><code>21.5°C</code></pre>
+      <ul class="compact">
+        <li><code>{}</code> needs the standard trait <code>Display</code>. <code>Dog</code> has none: <em>E0277 <code>Dog</code> doesn't implement <code>std::fmt::Display</code></em>.</li>
+        <li><code>write!</code> works like <code>format!</code>, but writes into <code>f</code>.</li>
+        <li>You also get <code>.to_string()</code> for free.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Standard traits</h2>
+  <table>
+    <tr><th>Trait</th><th>What it gives you</th><th><code>derive</code>?</th></tr>
+    <tr><td><code>Debug</code></td><td>Printing with <code>{:?}</code></td><td>Yes</td></tr>
+    <tr><td><code>Display</code></td><td>Printing with <code>{}</code></td><td>No, you decide how it looks</td></tr>
+    <tr><td><code>Clone</code></td><td>An explicit copy with <code>.clone()</code></td><td>Yes</td></tr>
+    <tr><td><code>Copy</code></td><td>Copied instead of moved (chapter 3)</td><td>Yes, if all fields are <code>Copy</code></td></tr>
+    <tr><td><code>PartialEq</code></td><td><code>==</code> and <code>!=</code></td><td>Yes</td></tr>
+    <tr><td><code>PartialOrd</code></td><td><code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code></td><td>Yes</td></tr>
+    <tr><td><code>Default</code></td><td>A starting value with <code>Type::default()</code></td><td>Yes</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2><code>derive</code> explained</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">#[derive(Debug, Clone, PartialEq, Default)]
+struct Settings {
+    volume: u8,
+    muted: bool,
+}
+
+let original = Settings::default();
+let copy = original.clone();
+println!("{copy:?} {}", copy == original);</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>Settings { volume: 0, muted: false } true</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>#[derive(…)]</code> writes the <code>impl</code> blocks for standard traits for you.</li>
+        <li>This is what <code>#[derive(Debug)]</code> did in chapter 5.</li>
+        <li><code>Default</code> uses each field's default: <code>0</code>, <code>false</code>, an empty <code>String</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>impl Trait</code> vs <code>dyn Trait</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">let items: Vec&lt;Box&lt;dyn Describe&gt;&gt; = vec![
+    Box::new(Dog {
+        name: String::from("Rex"),
+    }),
+    Box::new(Weather::Rainy),
+];
+for item in &amp;items {
+    println!("{}", item.describe());
+}</code></pre>
+      <span class="label">Output</span>
+      <pre class="small output"><code>Rex the dog
+a rainy day</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>impl Trait</code>: one concrete type, picked at compile time.</li>
+        <li><code>dyn Trait</code>: any type that implements the trait, picked at runtime. That's how one <code>Vec</code> can hold both a <code>Dog</code> and a <code>Weather</code>.</li>
+        <li><code>Box</code> stores a value on the heap (chapter 3). It's needed because the types have different sizes.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 3</div>
+  <h1>Error handling</h1>
+  <div class="bar"></div>
+</section>
+
+<section class="slide">
+  <h2>Two kinds of errors</h2>
+  <div class="columns">
+    <div>
+      <div class="card"><h3>Unrecoverable: <code>panic!</code></h3><p>A bug, or a state that should be impossible. The program stops.</p></div>
+      <div class="card"><h3>Recoverable: <code>Result</code></h3><p>Something that can reasonably fail: user input, files, the network. The caller decides what to do.</p></div>
+    </div>
+    <div>
+      <pre class="small"><code class="lang-rust">enum Result&lt;T, E&gt; {
+    Ok(T),
+    Err(E),
+}</code></pre>
+      <ul class="compact">
+        <li><code>Ok</code> holds the value, and <code>Err</code> holds the error.</li>
+        <li>Like <code>Option</code>, you can't use the value without handling the error case.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Handling a <code>Result</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let inputs = ["42", "4x2"];
+for input in inputs {
+    match input.parse::&lt;i32&gt;() {
+        Ok(number) =&gt; println!("number: {number}"),
+        Err(error) =&gt; println!("error: {error}"),
+    }
+}</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>number: 42
+error: invalid digit found in string</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>parse</code> turns text into a number and returns a <code>Result</code>.</li>
+        <li><code>::&lt;i32&gt;</code> says which type to parse into.</li>
+        <li><code>match</code> handles both outcomes, just as with <code>Option</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>unwrap</code> and <code>expect</code></h2>
+  <pre class="small"><code class="lang-rust">let number = "4x2".parse::&lt;i32&gt;().unwrap();
+let age = "4x2".parse::&lt;i32&gt;().expect("age must be a number");</code></pre>
+  <span class="label">Panic messages</span>
+  <pre class="small output"><code>called `Result::unwrap()` on an `Err` value: ParseIntError { kind: InvalidDigit }
+age must be a number: ParseIntError { kind: InvalidDigit }</code></pre>
+  <ul>
+    <li>Both return the value from <code>Ok</code>, or panic on <code>Err</code>.</li>
+    <li><code>expect</code> adds your message, which makes the panic much easier to understand.</li>
+    <li>Fine in tests and quick experiments. In real code, prefer handling the error.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>The <code>?</code> operator</h2>
+  <pre class="small"><code class="lang-rust">use std::num::ParseIntError;
+
+fn add_numbers(first: &amp;str, second: &amp;str) -&gt; Result&lt;i32, ParseIntError&gt; {
+    let a = first.parse::&lt;i32&gt;()?;
+    let b = second.parse::&lt;i32&gt;()?;
+    Ok(a + b)
+}
+println!("{:?}", add_numbers("2", "40"));
+println!("{:?}", add_numbers("2", "x"));</code></pre>
+  <div class="columns">
+    <div>
+      <span class="label">Output</span>
+      <pre class="small output"><code>Ok(42)
+Err(ParseIntError { kind: InvalidDigit })</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>?</code> on <code>Ok</code> gives the value. On <code>Err</code>, it returns the error from the function immediately.</li>
+        <li>It replaces a whole <code>match</code> with one character.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>?</code> in <code>main</code></h2>
+  <p class="aside"><code>error[E0277]</code>: <em>the <code>?</code> operator can only be used in a function that returns <code>Result</code> or <code>Option</code></em></p>
+  <pre class="tiny"><code class="lang-error"> --> src/main.rs:2:37
+  |
+1 | fn main() {
+  | --------- this function should return `Result` or `Option` to accept `?`
+2 |     let number = "42".parse::&lt;i32&gt;()?;
+  |                                     ^ cannot use the `?` operator in a function that returns `()`</code></pre>
+  <div class="columns">
+    <div>
+      <pre class="small"><code class="lang-rust">fn main() -&gt; Result&lt;(), ParseIntError&gt; {
+    let number = "4x2".parse::&lt;i32&gt;()?;
+    println!("{number}");
+    Ok(())
+}</code></pre>
+    </div>
+    <div>
+      <span class="label">Output</span>
+      <pre class="small output"><code>Error: ParseIntError { kind: InvalidDigit }</code></pre>
+      <ul class="compact">
+        <li><code>main</code> may return a <code>Result</code>. An <code>Err</code> is printed, and the program exits with an error code.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Your own error type</h2>
+  <div class="columns columns-wider-left">
+    <div>
+      <pre class="tiny"><code class="lang-rust">#[derive(Debug)]
+enum AgeError {
+    NotANumber,
+    TooOld(u32),
+}
+
+impl fmt::Display for AgeError {
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter) -&gt; fmt::Result {
+        match self {
+            AgeError::NotANumber =&gt; write!(f, "age must be a number"),
+            AgeError::TooOld(age) =&gt; write!(f, "{age} is too old"),
+        }
+    }
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>An enum lists everything that can go wrong. Callers can <code>match</code> on it.</li>
+        <li><code>Display</code> gives each error a readable message.</li>
+        <li><code>Debug</code> lets it be printed with <code>{:?}</code>, for example when <code>main</code> returns it.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Returning your own errors</h2>
+  <div class="columns columns-wider-left">
+    <div>
+      <pre class="tiny"><code class="lang-rust">fn parse_age(input: &amp;str) -&gt; Result&lt;u32, AgeError&gt; {
+    let age = input.parse::&lt;u32&gt;().map_err(|_| AgeError::NotANumber)?;
+    if age &gt; 150 {
+        return Err(AgeError::TooOld(age));
+    }
+    Ok(age)
+}
+
+for input in ["30", "abc", "200"] {
+    match parse_age(input) {
+        Ok(age) =&gt; println!("age: {age}"),
+        Err(error) =&gt; println!("error: {error}"),
+    }
+}</code></pre>
+    </div>
+    <div>
+      <span class="label">Output</span>
+      <pre class="small output"><code>age: 30
+error: age must be a number
+error: 200 is too old</code></pre>
+      <ul class="compact">
+        <li><code>.map_err(…)</code> turns the parse error into your own error, using a closure (chapter 5).</li>
+        <li><code>return Err(…)</code> reports your own failure.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>panic!</code> or <code>Result</code>?</h2>
+  <div class="columns">
+    <div>
+      <h3>Return a <code>Result</code> when</h3>
+      <ul class="compact">
+        <li>failure is a normal possibility: user input, files, the network</li>
+        <li>the caller should decide what happens next</li>
+        <li>you're writing a library for others</li>
+      </ul>
+      <h3>Converting</h3>
+      <ul class="compact">
+        <li><code>option.ok_or("no value")</code> turns an <code>Option</code> into a <code>Result</code>.</li>
+        <li><code>result.ok()</code> turns a <code>Result</code> into an <code>Option</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Panic when</h3>
+      <ul class="compact">
+        <li>it's a bug: a broken assumption, a state that should be impossible</li>
+        <li>continuing would be wrong or unsafe</li>
+        <li>you're writing a test, an example or a prototype (<code>unwrap</code>, <code>expect</code>)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 4</div>
+  <h1>Testing</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Letting the computer check your code</div>
+</section>
+
+<section class="slide">
+  <h2>A first test</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn largest_finds_biggest_number() {
+        assert_eq!(*largest(&amp;[3, 9, 4]), 9);
+    }
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>#[test]</code> marks a function as a test.</li>
+        <li><code>mod tests</code> is a <strong>module</strong>: a named group of code inside the file.</li>
+        <li><code>use super::*;</code> brings in everything from the file around it, so the test can call <code>largest</code>.</li>
+        <li><code>#[cfg(test)]</code> compiles the module only for <code>cargo test</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Running tests</h2>
+  <pre class="small output"><code>$ cargo test
+running 7 tests
+test tests::adds_valid_numbers ... ok
+test tests::largest_finds_biggest_number ... ok
+test tests::parse_age_accepts_valid_age ... ok
+test tests::parse_age_rejects_age_over_150 ... ok
+test tests::largest_of_empty_slice_panics - should panic ... ok
+test tests::temperature_displays_one_decimal ... ok
+test tests::parse_age_rejects_text ... ok
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s</code></pre>
+  <ul>
+    <li><code>cargo test</code> compiles the program with its tests and runs every <code>#[test]</code> function.</li>
+    <li>A test passes if it finishes without panicking.</li>
+    <li>Tests run in parallel, so their order changes from run to run.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Assertions</h2>
+  <pre class="small"><code class="lang-rust">assert_eq!(parse_age("30").unwrap(), 30);
+assert!(matches!(parse_age("abc"), Err(AgeError::NotANumber)));
+assert_ne!(temperature.to_string(), "21.456°C");
+assert!(result.is_err(), "expected an error for 200, got {result:?}");</code></pre>
+  <table class="spaced">
+    <tr><th>Macro</th><th>Panics when</th></tr>
+    <tr><td><code>assert!(condition)</code></td><td>the condition is <code>false</code></td></tr>
+    <tr><td><code>assert_eq!(left, right)</code></td><td>the values differ, and it shows both</td></tr>
+    <tr><td><code>assert_ne!(left, right)</code></td><td>the values are equal</td></tr>
+    <tr><td><code>matches!(value, pattern)</code></td><td>never: it returns a <code>bool</code>, which you pass to <code>assert!</code></td></tr>
+  </table>
+  <p class="note">Any assertion takes an extra message with <code>{}</code> placeholders, shown when it fails.</p>
+</section>
+
+<section class="slide">
+  <h2>When a test fails</h2>
+  <pre class="small output"><code>---- tests::largest_of_letters_is_wrong_on_purpose stdout ----
+
+thread 'tests::largest_of_letters_is_wrong_on_purpose' (22860) panicked at src/main.rs:293:9:
+assertion `left == right` failed
+  left: 'z'
+ right: 'k'
+
+test result: FAILED. 7 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s</code></pre>
+  <ul>
+    <li>Each failure shows the test name, the file and line, and both values.</li>
+    <li><code>left</code> is the first argument (here, what the code produced), <code>right</code> is the second (what you expected).</li>
+    <li>The other tests still run, so one failure doesn't hide the others.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Testing panics and errors</h2>
+  <div class="columns">
+    <div>
+      <pre class="tiny"><code class="lang-rust">#[test]
+#[should_panic(expected = "index out of bounds")]
+fn largest_of_empty_slice_panics() {
+    largest::&lt;i32&gt;(&amp;[]);
+}</code></pre>
+      <ul class="compact">
+        <li><code>#[should_panic]</code> passes only if the test panics.</li>
+        <li><code>expected</code> checks that the panic message contains this text.</li>
+      </ul>
+    </div>
+    <div>
+      <pre class="tiny"><code class="lang-rust">#[test]
+fn adds_valid_numbers() -&gt; Result&lt;(), ParseIntError&gt; {
+    assert_eq!(add_numbers("2", "40")?, 42);
+    Ok(())
+}</code></pre>
+      <ul class="compact">
+        <li>A test can return a <code>Result</code> and use <code>?</code>.</li>
+        <li>It fails if it returns an <code>Err</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Choosing which tests to run</h2>
+  <table>
+    <tr><th>Command</th><th>What it runs</th></tr>
+    <tr><td><code>cargo test</code></td><td>All tests</td></tr>
+    <tr><td><code>cargo test parse_age</code></td><td>Only tests whose name contains <code>parse_age</code> (3 of 7 here)</td></tr>
+    <tr><td><code>cargo test -- --show-output</code></td><td>All tests, and also shows what passing tests printed</td></tr>
+  </table>
+  <ul class="spaced">
+    <li><strong>Integration tests</strong> live in a <code>tests/</code> folder and use your code from outside, like a user would.</li>
+    <li><strong>Documentation tests</strong> are code examples in <code>///</code> comments, and <code>cargo test</code> runs them too.</li>
+    <li>Both need a library crate (<code>src/lib.rs</code>), so they're beyond this course's single-file examples.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Effective tests</h2>
+  <div class="columns">
+    <div>
+      <div class="card"><h3>One behavior per test</h3><p>When it fails, you know exactly what broke.</p></div>
+      <div class="card"><h3>Names that describe the behavior</h3><p><code>parse_age_rejects_text</code> beats <code>test3</code>.</p></div>
+      <div class="card"><h3>Edge cases</h3><p>Empty input, zero, the limits (150 and 151), unusual characters.</p></div>
+    </div>
+    <div>
+      <div class="card"><h3>The error paths too</h3><p>Check that bad input gives the right error, not only that good input works.</p></div>
+      <div class="card"><h3>Fast and independent</h3><p>No test should depend on another one or on the order they run in.</p></div>
+      <div class="card"><h3>Tests as documentation</h3><p>Reading the tests should tell you what the code is supposed to do.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Arrange, act, assert</h2>
+  <pre class="small"><code class="lang-rust">#[test]
+fn parse_age_rejects_age_over_150() {
+    let input = "200";
+
+    let result = parse_age(input);
+
+    assert!(result.is_err(), "expected an error for 200, got {result:?}");
+}</code></pre>
+  <div class="columns">
+    <ul class="compact">
+      <li><strong>Arrange</strong>: prepare the input.</li>
+      <li><strong>Act</strong>: call the code you're testing, once.</li>
+    </ul>
+    <ul class="compact">
+      <li><strong>Assert</strong>: check the result, with a message that explains the failure.</li>
+      <li>Blank lines between the steps make the structure easy to see.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Summary</h2>
+  <ul>
+    <li>Generics write code once for many types. Trait bounds say what those types must be able to do.</li>
+    <li>Traits define shared behavior. <code>derive</code> implements standard traits, and <code>dyn</code> mixes types at runtime.</li>
+    <li><code>Result</code> represents recoverable errors. <code>?</code> passes them to the caller, and your own enum describes them.</li>
+    <li><code>panic!</code> is for bugs. <code>unwrap</code> and <code>expect</code> are for tests and prototypes.</li>
+    <li><code>#[test]</code>, assertions and <code>cargo test</code> check behavior. Good tests are small, well named, and cover the error paths.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Course wrap-up</h2>
+  <table>
+    <tr><th>Chapter</th><th>Key ideas</th></tr>
+    <tr><td>1. Introduction</td><td><code>rustup</code>, <code>cargo</code>, your first program, compiler errors</td></tr>
+    <tr><td>2. Syntax and types</td><td>Scalar and compound types, functions, expressions</td></tr>
+    <tr><td>3. Ownership</td><td>Moves, borrowing, the borrow checker, lifetimes</td></tr>
+    <tr><td>4. Control flow</td><td><code>mut</code>, shadowing, <code>if</code>, loops, <code>match</code>, macros</td></tr>
+    <tr><td>5. Data structures</td><td>Slices, collections, iterators, structs, enums, <code>Option</code></td></tr>
+    <tr><td>6. Advanced and testing</td><td>Generics, traits, <code>Result</code>, tests</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2>Where to go next</h2>
+  <div class="columns">
+    <div>
+      <h3>Read</h3>
+      <ul class="compact">
+        <li><em>The Rust Programming Language</em> ("the Book"): doc.rust-lang.org/book</li>
+        <li><em>Rust by Example</em>: doc.rust-lang.org/rust-by-example</li>
+        <li>Standard library docs, offline: <code>rustup doc --std</code></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Practice</h3>
+      <ul class="compact">
+        <li>The course exercises</li>
+        <li><em>Rustlings</em>: small exercises that make the compiler's errors familiar</li>
+        <li>Your own small tools. Find crates on crates.io and their docs on docs.rs.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">Keep <code>cargo clippy</code> and <code>cargo fmt</code> in your routine. The compiler is still your best teacher.</p>
+</section>
+
+</div>
+
+<div class="slides" data-lang="pl">
+
+<section class="slide title-slide">
+  <div class="chapter">Rozdział 6</div>
+  <h1>Zaawansowane koncepcje i testowanie</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Typy generyczne, traity, obsługa błędów i skuteczne testy</div>
+</section>
+
+<section class="slide">
+  <h2>W tym rozdziale</h2>
+  <ol>
+    <li><strong>Typy generyczne</strong>: jeden kod dla wielu typów</li>
+    <li><strong>Traity</strong>: wspólne zachowanie, traity standardowe, <code>derive</code>, <code>dyn</code></li>
+    <li><strong>Obsługa błędów</strong>: <code>Result</code>, <code>?</code>, własne typy błędów</li>
+    <li><strong>Testowanie</strong>: <code>#[test]</code>, asercje, <code>cargo test</code>, skuteczne testy</li>
+  </ol>
+  <p class="note">Kod do tego rozdziału: <code>006-advanced-concepts-tests/</code>. Uruchom zarówno <code>cargo run</code>, jak i <code>cargo test</code>.</p>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 1</div>
+  <h1>Typy generyczne</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Jeden kod dla wielu typów</div>
+</section>
+
+<section class="slide">
+  <h2>Problem: powielony kod</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">fn largest_i32(items: &amp;[i32]) -> &amp;i32 {
+    let mut largest = &amp;items[0];
+    for item in items {
+        if item &gt; largest {
+            largest = item;
+        }
+    }
+    largest
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>Ta funkcja znajduje największą liczbę w wycinku.</li>
+        <li>Żeby zrobić to samo dla liter, trzeba by napisać <code>largest_char</code> z tym samym ciałem, zmieniając tylko <code>i32</code> na <code>char</code>.</li>
+        <li>Dwie kopie oznaczają, że każdy błąd trzeba poprawiać dwa razy.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Funkcja generyczna</h2>
+  <p>To samo ciało, a typ staje się parametrem <code>&lt;T&gt;</code>:</p>
+  <pre class="tiny"><code class="lang-error">error[E0369]: binary operation `&gt;` cannot be applied to type `&amp;T`
+  --> src/main.rs:17:17
+   |
+17 |         if item &gt; largest {
+   |            ---- ^ ------- &amp;T
+   |            |
+   |            &amp;T
+   |
+help: consider restricting type parameter `T` with trait `PartialOrd`
+   |
+14 | fn largest_without_bound&lt;T: std::cmp::PartialOrd&gt;(items: &amp;[T]) -> &amp;T {
+   |                           ++++++++++++++++++++++</code></pre>
+  <ul>
+    <li><code>&lt;T&gt;</code> deklaruje <strong>parametr typu</strong>: „jakiś typ, wybrany przez wywołującego”.</li>
+    <li>Nie każdy typ da się porównać przez <code>&gt;</code>. Linia <code>help:</code> pokazuje poprawkę.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Ograniczenia traitów (trait bounds)</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">fn largest&lt;T: PartialOrd&gt;(items: &amp;[T]) -> &amp;T {
+    let mut largest = &amp;items[0];
+    for item in items {
+        if item &gt; largest {
+            largest = item;
+        }
+    }
+    largest
+}
+
+let numbers = [34, 50, 25, 100, 65];
+let letters = ['y', 'm', 'a', 'q'];
+println!("{} {}", largest(&amp;numbers), largest(&amp;letters));</code></pre>
+    </div>
+    <div>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>100 y</code></pre>
+      <ul class="compact">
+        <li><code>T: PartialOrd</code> to <strong>ograniczenie traitu</strong>: dowolny typ, który da się porównywać.</li>
+        <li>Jedna funkcja działa teraz dla <code>i32</code>, <code>char</code> i każdego innego porównywalnego typu.</li>
+        <li>Bez kosztów w czasie działania: kompilator generuje osobną kopię dla każdego użytego typu.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Struktury generyczne</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">struct Point&lt;T&gt; {
+    x: T,
+    y: T,
+}
+
+impl&lt;T&gt; Point&lt;T&gt; {
+    fn x(&amp;self) -> &amp;T {
+        &amp;self.x
+    }
+}
+
+let integer_point = Point { x: 5, y: 10 };
+let float_point = Point { x: 1.0, y: 4.0 };</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>Struktury i enumy też mogą mieć parametry typu.</li>
+        <li><code>impl&lt;T&gt;</code> pisze metody raz dla każdego <code>Point&lt;T&gt;</code>.</li>
+        <li>Oba pola dzielą jedno <code>T</code>, więc <code>Point { x: 5, y: 4.0 }</code> się nie skompiluje: <em>E0308 expected integer, found floating-point number</em>.</li>
+        <li><code>Option&lt;T&gt;</code> i <code>Result&lt;T, E&gt;</code> to właśnie takie enumy generyczne.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 2</div>
+  <h1>Traity</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Zachowanie wspólne dla różnych typów</div>
+</section>
+
+<section class="slide">
+  <h2>Definiowanie i implementowanie traitu</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">trait Describe {
+    fn describe(&amp;self) -> String;
+}
+
+struct Dog {
+    name: String,
+}
+
+impl Describe for Dog {
+    fn describe(&amp;self) -> String {
+        format!("{} the dog", self.name)
+    }
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><strong>Trait</strong> wymienia metody, które typ obiecuje dostarczyć.</li>
+        <li><code>impl Describe for Dog</code> spełnia tę obietnicę dla <code>Dog</code>.</li>
+        <li>Pominięcie metody daje <em>E0046 not all trait items implemented, missing: <code>describe</code></em>.</li>
+        <li>Traity przypominają interfejsy z innych języków.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Enumy i metody domyślne</h2>
+  <div class="columns columns-wider-left">
+    <div>
+      <pre class="small"><code class="lang-rust">impl Describe for Weather {
+    fn describe(&amp;self) -> String {
+        match self {
+            Weather::Sunny =&gt; String::from("a sunny day"),
+            Weather::Rainy =&gt; String::from("a rainy day"),
+        }
+    }
+}</code></pre>
+      <ul class="compact">
+        <li>Trait może zaimplementować każdy typ, także enum.</li>
+      </ul>
+    </div>
+    <div>
+      <pre class="tiny"><code class="lang-rust">trait Describe {
+    fn describe(&amp;self) -> String;
+
+    fn shout(&amp;self) -> String {
+        self.describe().to_uppercase()
+    }
+}</code></pre>
+      <span class="label command">Weather::Rainy.shout()</span>
+      <pre class="small output"><code>A RAINY DAY</code></pre>
+      <ul class="compact">
+        <li><strong>Metoda domyślna</strong> ma ciało w traicie. Typy dostają ją za darmo i mogą ją nadpisać.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Traity jako parametry</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">fn print_description(item: &amp;impl Describe) {
+    println!("{}", item.describe());
+}
+
+fn print_twice&lt;T: Describe&gt;(item: &amp;T) {
+    println!("{} / {}", item.describe(), item.shout());
+}
+
+fn print_and_copy&lt;T&gt;(item: &amp;T) -> T
+where
+    T: Describe + Clone,
+{
+    println!("{}", item.describe());
+    item.clone()
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>&amp;impl Describe</code> przyjmuje dowolny typ, który implementuje trait.</li>
+        <li><code>&lt;T: Describe&gt;</code> mówi to samo w dłuższej formie.</li>
+        <li><code>+</code> wymaga kilku traitów naraz.</li>
+        <li><code>where</code> przenosi długie ograniczenia poza sygnaturę.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>Display</code>: wypisywanie przez <code>{}</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">use std::fmt;
+
+struct Temperature {
+    degrees: f64,
+}
+
+impl fmt::Display for Temperature {
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:.1}°C", self.degrees)
+    }
+}
+
+let temperature = Temperature { degrees: 21.456 };
+println!("{temperature}");</code></pre>
+    </div>
+    <div>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>21.5°C</code></pre>
+      <ul class="compact">
+        <li><code>{}</code> wymaga standardowego traitu <code>Display</code>. <code>Dog</code> go nie ma: <em>E0277 <code>Dog</code> doesn't implement <code>std::fmt::Display</code></em>.</li>
+        <li><code>write!</code> działa jak <code>format!</code>, ale pisze do <code>f</code>.</li>
+        <li>W zestawie dostajesz też <code>.to_string()</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Traity standardowe</h2>
+  <table>
+    <tr><th>Trait</th><th>Co daje</th><th><code>derive</code>?</th></tr>
+    <tr><td><code>Debug</code></td><td>Wypisywanie przez <code>{:?}</code></td><td>Tak</td></tr>
+    <tr><td><code>Display</code></td><td>Wypisywanie przez <code>{}</code></td><td>Nie, to ty decydujesz, jak wygląda</td></tr>
+    <tr><td><code>Clone</code></td><td>Jawną kopię przez <code>.clone()</code></td><td>Tak</td></tr>
+    <tr><td><code>Copy</code></td><td>Kopiowanie zamiast przenoszenia (rozdział 3)</td><td>Tak, jeśli wszystkie pola są <code>Copy</code></td></tr>
+    <tr><td><code>PartialEq</code></td><td><code>==</code> i <code>!=</code></td><td>Tak</td></tr>
+    <tr><td><code>PartialOrd</code></td><td><code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code></td><td>Tak</td></tr>
+    <tr><td><code>Default</code></td><td>Wartość początkową przez <code>Type::default()</code></td><td>Tak</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2><code>derive</code> wyjaśnione</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">#[derive(Debug, Clone, PartialEq, Default)]
+struct Settings {
+    volume: u8,
+    muted: bool,
+}
+
+let original = Settings::default();
+let copy = original.clone();
+println!("{copy:?} {}", copy == original);</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>Settings { volume: 0, muted: false } true</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>#[derive(…)]</code> pisze za ciebie bloki <code>impl</code> dla traitów standardowych.</li>
+        <li>To właśnie robiło <code>#[derive(Debug)]</code> w rozdziale 5.</li>
+        <li><code>Default</code> używa wartości domyślnej każdego pola: <code>0</code>, <code>false</code>, pusty <code>String</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>impl Trait</code> a <code>dyn Trait</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">let items: Vec&lt;Box&lt;dyn Describe&gt;&gt; = vec![
+    Box::new(Dog {
+        name: String::from("Rex"),
+    }),
+    Box::new(Weather::Rainy),
+];
+for item in &amp;items {
+    println!("{}", item.describe());
+}</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>Rex the dog
+a rainy day</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>impl Trait</code>: jeden konkretny typ, wybrany w czasie kompilacji.</li>
+        <li><code>dyn Trait</code>: dowolny typ implementujący trait, wybrany w czasie działania. Dzięki temu jeden <code>Vec</code> mieści i <code>Dog</code>, i <code>Weather</code>.</li>
+        <li><code>Box</code> przechowuje wartość na stercie (rozdział 3). Jest potrzebny, bo typy mają różne rozmiary.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 3</div>
+  <h1>Obsługa błędów</h1>
+  <div class="bar"></div>
+</section>
+
+<section class="slide">
+  <h2>Dwa rodzaje błędów</h2>
+  <div class="columns">
+    <div>
+      <div class="card"><h3>Nienaprawialne: <code>panic!</code></h3><p>Błąd w programie albo stan, który nie powinien wystąpić. Program się zatrzymuje.</p></div>
+      <div class="card"><h3>Naprawialne: <code>Result</code></h3><p>Coś, co może się nie udać w normalnych warunkach: dane od użytkownika, pliki, sieć. Wywołujący decyduje, co dalej.</p></div>
+    </div>
+    <div>
+      <pre class="small"><code class="lang-rust">enum Result&lt;T, E&gt; {
+    Ok(T),
+    Err(E),
+}</code></pre>
+      <ul class="compact">
+        <li><code>Ok</code> zawiera wartość, a <code>Err</code> zawiera błąd.</li>
+        <li>Tak jak przy <code>Option</code>, nie użyjesz wartości bez obsłużenia błędu.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Obsługa <code>Result</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let inputs = ["42", "4x2"];
+for input in inputs {
+    match input.parse::&lt;i32&gt;() {
+        Ok(number) =&gt; println!("number: {number}"),
+        Err(error) =&gt; println!("error: {error}"),
+    }
+}</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>number: 42
+error: invalid digit found in string</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>parse</code> zamienia tekst na liczbę i zwraca <code>Result</code>.</li>
+        <li><code>::&lt;i32&gt;</code> mówi, na jaki typ zamieniać.</li>
+        <li><code>match</code> obsługuje oba wyniki, tak jak przy <code>Option</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>unwrap</code> i <code>expect</code></h2>
+  <pre class="small"><code class="lang-rust">let number = "4x2".parse::&lt;i32&gt;().unwrap();
+let age = "4x2".parse::&lt;i32&gt;().expect("age must be a number");</code></pre>
+  <span class="label">Komunikaty paniki</span>
+  <pre class="small output"><code>called `Result::unwrap()` on an `Err` value: ParseIntError { kind: InvalidDigit }
+age must be a number: ParseIntError { kind: InvalidDigit }</code></pre>
+  <ul>
+    <li>Obie metody zwracają wartość z <code>Ok</code> albo panikują przy <code>Err</code>.</li>
+    <li><code>expect</code> dodaje twój komunikat, dzięki czemu panika jest dużo łatwiejsza do zrozumienia.</li>
+    <li>Dobre w testach i szybkich eksperymentach. W prawdziwym kodzie lepiej obsłużyć błąd.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Operator <code>?</code></h2>
+  <pre class="small"><code class="lang-rust">use std::num::ParseIntError;
+
+fn add_numbers(first: &amp;str, second: &amp;str) -&gt; Result&lt;i32, ParseIntError&gt; {
+    let a = first.parse::&lt;i32&gt;()?;
+    let b = second.parse::&lt;i32&gt;()?;
+    Ok(a + b)
+}
+println!("{:?}", add_numbers("2", "40"));
+println!("{:?}", add_numbers("2", "x"));</code></pre>
+  <div class="columns">
+    <div>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>Ok(42)
+Err(ParseIntError { kind: InvalidDigit })</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>?</code> przy <code>Ok</code> daje wartość. Przy <code>Err</code> od razu zwraca błąd z funkcji.</li>
+        <li>Zastępuje cały <code>match</code> jednym znakiem.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>?</code> w <code>main</code></h2>
+  <p class="aside"><code>error[E0277]</code>: <em>the <code>?</code> operator can only be used in a function that returns <code>Result</code> or <code>Option</code></em></p>
+  <pre class="tiny"><code class="lang-error"> --> src/main.rs:2:37
+  |
+1 | fn main() {
+  | --------- this function should return `Result` or `Option` to accept `?`
+2 |     let number = "42".parse::&lt;i32&gt;()?;
+  |                                     ^ cannot use the `?` operator in a function that returns `()`</code></pre>
+  <div class="columns">
+    <div>
+      <pre class="small"><code class="lang-rust">fn main() -&gt; Result&lt;(), ParseIntError&gt; {
+    let number = "4x2".parse::&lt;i32&gt;()?;
+    println!("{number}");
+    Ok(())
+}</code></pre>
+    </div>
+    <div>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>Error: ParseIntError { kind: InvalidDigit }</code></pre>
+      <ul class="compact">
+        <li><code>main</code> może zwracać <code>Result</code>. <code>Err</code> zostaje wypisany, a program kończy się kodem błędu.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Własny typ błędu</h2>
+  <div class="columns columns-wider-left">
+    <div>
+      <pre class="tiny"><code class="lang-rust">#[derive(Debug)]
+enum AgeError {
+    NotANumber,
+    TooOld(u32),
+}
+
+impl fmt::Display for AgeError {
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter) -&gt; fmt::Result {
+        match self {
+            AgeError::NotANumber =&gt; write!(f, "age must be a number"),
+            AgeError::TooOld(age) =&gt; write!(f, "{age} is too old"),
+        }
+    }
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>Enum wymienia wszystko, co może pójść źle. Wywołujący może zrobić na nim <code>match</code>.</li>
+        <li><code>Display</code> daje każdemu błędowi czytelny komunikat.</li>
+        <li><code>Debug</code> pozwala wypisać go przez <code>{:?}</code>, np. gdy zwraca go <code>main</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Zwracanie własnych błędów</h2>
+  <div class="columns columns-wider-left">
+    <div>
+      <pre class="tiny"><code class="lang-rust">fn parse_age(input: &amp;str) -&gt; Result&lt;u32, AgeError&gt; {
+    let age = input.parse::&lt;u32&gt;().map_err(|_| AgeError::NotANumber)?;
+    if age &gt; 150 {
+        return Err(AgeError::TooOld(age));
+    }
+    Ok(age)
+}
+
+for input in ["30", "abc", "200"] {
+    match parse_age(input) {
+        Ok(age) =&gt; println!("age: {age}"),
+        Err(error) =&gt; println!("error: {error}"),
+    }
+}</code></pre>
+    </div>
+    <div>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>age: 30
+error: age must be a number
+error: 200 is too old</code></pre>
+      <ul class="compact">
+        <li><code>.map_err(…)</code> zamienia błąd parsowania na twój własny błąd za pomocą domknięcia (rozdział 5).</li>
+        <li><code>return Err(…)</code> zgłasza twoją własną porażkę.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>panic!</code> czy <code>Result</code>?</h2>
+  <div class="columns">
+    <div>
+      <h3>Zwracaj <code>Result</code>, gdy</h3>
+      <ul class="compact">
+        <li>porażka jest normalną możliwością: dane od użytkownika, pliki, sieć</li>
+        <li>to wywołujący powinien zdecydować, co dalej</li>
+        <li>piszesz bibliotekę dla innych</li>
+      </ul>
+      <h3>Konwersje</h3>
+      <ul class="compact">
+        <li><code>option.ok_or("no value")</code> zamienia <code>Option</code> na <code>Result</code>.</li>
+        <li><code>result.ok()</code> zamienia <code>Result</code> na <code>Option</code>.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Panikuj, gdy</h3>
+      <ul class="compact">
+        <li>to błąd w programie: złamane założenie, stan, który nie powinien wystąpić</li>
+        <li>kontynuowanie byłoby błędne albo niebezpieczne</li>
+        <li>piszesz test, przykład albo prototyp (<code>unwrap</code>, <code>expect</code>)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 4</div>
+  <h1>Testowanie</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Niech komputer sprawdza twój kod</div>
+</section>
+
+<section class="slide">
+  <h2>Pierwszy test</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn largest_finds_biggest_number() {
+        assert_eq!(*largest(&amp;[3, 9, 4]), 9);
+    }
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>#[test]</code> oznacza funkcję jako test.</li>
+        <li><code>mod tests</code> to <strong>moduł</strong>: nazwana grupa kodu wewnątrz pliku.</li>
+        <li><code>use super::*;</code> udostępnia wszystko z otaczającego pliku, więc test może wywołać <code>largest</code>.</li>
+        <li><code>#[cfg(test)]</code> kompiluje moduł tylko dla <code>cargo test</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Uruchamianie testów</h2>
+  <pre class="small output"><code>$ cargo test
+running 7 tests
+test tests::adds_valid_numbers ... ok
+test tests::largest_finds_biggest_number ... ok
+test tests::parse_age_accepts_valid_age ... ok
+test tests::parse_age_rejects_age_over_150 ... ok
+test tests::largest_of_empty_slice_panics - should panic ... ok
+test tests::temperature_displays_one_decimal ... ok
+test tests::parse_age_rejects_text ... ok
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s</code></pre>
+  <ul>
+    <li><code>cargo test</code> kompiluje program razem z testami i uruchamia każdą funkcję <code>#[test]</code>.</li>
+    <li>Test przechodzi, jeśli zakończy się bez paniki.</li>
+    <li>Testy działają równolegle, więc ich kolejność zmienia się między uruchomieniami.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Asercje</h2>
+  <pre class="small"><code class="lang-rust">assert_eq!(parse_age("30").unwrap(), 30);
+assert!(matches!(parse_age("abc"), Err(AgeError::NotANumber)));
+assert_ne!(temperature.to_string(), "21.456°C");
+assert!(result.is_err(), "expected an error for 200, got {result:?}");</code></pre>
+  <table class="spaced">
+    <tr><th>Makro</th><th>Panikuje, gdy</th></tr>
+    <tr><td><code>assert!(condition)</code></td><td>warunek jest <code>false</code></td></tr>
+    <tr><td><code>assert_eq!(left, right)</code></td><td>wartości się różnią, i pokazuje obie</td></tr>
+    <tr><td><code>assert_ne!(left, right)</code></td><td>wartości są równe</td></tr>
+    <tr><td><code>matches!(value, pattern)</code></td><td>nigdy: zwraca <code>bool</code>, który przekazujesz do <code>assert!</code></td></tr>
+  </table>
+  <p class="note">Każda asercja przyjmuje dodatkowy komunikat ze znacznikami <code>{}</code>, wyświetlany przy porażce.</p>
+</section>
+
+<section class="slide">
+  <h2>Gdy test nie przechodzi</h2>
+  <pre class="small output"><code>---- tests::largest_of_letters_is_wrong_on_purpose stdout ----
+
+thread 'tests::largest_of_letters_is_wrong_on_purpose' (22860) panicked at src/main.rs:293:9:
+assertion `left == right` failed
+  left: 'z'
+ right: 'k'
+
+test result: FAILED. 7 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s</code></pre>
+  <ul>
+    <li>Każda porażka pokazuje nazwę testu, plik i wiersz oraz obie wartości.</li>
+    <li><code>left</code> to pierwszy argument (tu: co dał kod), <code>right</code> to drugi (czego oczekiwałeś).</li>
+    <li>Pozostałe testy wciąż się wykonują, więc jedna porażka nie ukrywa innych.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Testowanie panik i błędów</h2>
+  <div class="columns">
+    <div>
+      <pre class="tiny"><code class="lang-rust">#[test]
+#[should_panic(expected = "index out of bounds")]
+fn largest_of_empty_slice_panics() {
+    largest::&lt;i32&gt;(&amp;[]);
+}</code></pre>
+      <ul class="compact">
+        <li><code>#[should_panic]</code> przechodzi tylko wtedy, gdy test spanikuje.</li>
+        <li><code>expected</code> sprawdza, czy komunikat paniki zawiera ten tekst.</li>
+      </ul>
+    </div>
+    <div>
+      <pre class="tiny"><code class="lang-rust">#[test]
+fn adds_valid_numbers() -&gt; Result&lt;(), ParseIntError&gt; {
+    assert_eq!(add_numbers("2", "40")?, 42);
+    Ok(())
+}</code></pre>
+      <ul class="compact">
+        <li>Test może zwracać <code>Result</code> i używać <code>?</code>.</li>
+        <li>Nie przechodzi, jeśli zwróci <code>Err</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Wybór testów do uruchomienia</h2>
+  <table>
+    <tr><th>Polecenie</th><th>Co uruchamia</th></tr>
+    <tr><td><code>cargo test</code></td><td>Wszystkie testy</td></tr>
+    <tr><td><code>cargo test parse_age</code></td><td>Tylko testy, których nazwa zawiera <code>parse_age</code> (tu 3 z 7)</td></tr>
+    <tr><td><code>cargo test -- --show-output</code></td><td>Wszystkie testy i dodatkowo to, co wypisały testy zakończone sukcesem</td></tr>
+  </table>
+  <ul class="spaced">
+    <li><strong>Testy integracyjne</strong> leżą w katalogu <code>tests/</code> i używają kodu z zewnątrz, jak użytkownik.</li>
+    <li><strong>Testy dokumentacji</strong> to przykłady kodu w komentarzach <code>///</code>, które <code>cargo test</code> też uruchamia.</li>
+    <li>Oba rodzaje wymagają biblioteki (<code>src/lib.rs</code>), więc wykraczają poza jednoplikowe przykłady z kursu.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Skuteczne testy</h2>
+  <div class="columns">
+    <div>
+      <div class="card"><h3>Jedno zachowanie na test</h3><p>Gdy test nie przejdzie, wiesz dokładnie, co się zepsuło.</p></div>
+      <div class="card"><h3>Nazwy opisujące zachowanie</h3><p><code>parse_age_rejects_text</code> jest lepsze niż <code>test3</code>.</p></div>
+      <div class="card"><h3>Przypadki brzegowe</h3><p>Puste dane, zero, granice (150 i 151), nietypowe znaki.</p></div>
+    </div>
+    <div>
+      <div class="card"><h3>Także ścieżki błędów</h3><p>Sprawdzaj, że złe dane dają właściwy błąd, a nie tylko, że dobre działają.</p></div>
+      <div class="card"><h3>Szybkie i niezależne</h3><p>Żaden test nie powinien zależeć od innego ani od kolejności wykonania.</p></div>
+      <div class="card"><h3>Testy jako dokumentacja</h3><p>Testy powinny mówić, co kod ma robić.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Przygotuj, wykonaj, sprawdź</h2>
+  <pre class="small"><code class="lang-rust">#[test]
+fn parse_age_rejects_age_over_150() {
+    let input = "200";
+
+    let result = parse_age(input);
+
+    assert!(result.is_err(), "expected an error for 200, got {result:?}");
+}</code></pre>
+  <div class="columns">
+    <ul class="compact">
+      <li><strong>Przygotuj</strong> (arrange): przygotuj dane wejściowe.</li>
+      <li><strong>Wykonaj</strong> (act): wywołaj testowany kod, jeden raz.</li>
+    </ul>
+    <ul class="compact">
+      <li><strong>Sprawdź</strong> (assert): sprawdź wynik, z komunikatem wyjaśniającym porażkę.</li>
+      <li>Puste linie między krokami pokazują strukturę.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Podsumowanie</h2>
+  <ul>
+    <li>Typy generyczne pozwalają napisać kod raz dla wielu typów. Ograniczenia traitów mówią, co te typy muszą umieć.</li>
+    <li>Traity definiują wspólne zachowanie. <code>derive</code> implementuje traity standardowe, a <code>dyn</code> łączy typy w czasie działania.</li>
+    <li><code>Result</code> reprezentuje błędy naprawialne. <code>?</code> przekazuje je wywołującemu, a własny enum je opisuje.</li>
+    <li><code>panic!</code> jest dla błędów w programie. <code>unwrap</code> i <code>expect</code> są dla testów i prototypów.</li>
+    <li><code>#[test]</code>, asercje i <code>cargo test</code> sprawdzają zachowanie. Dobre testy są małe, dobrze nazwane i obejmują ścieżki błędów.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Podsumowanie kursu</h2>
+  <table>
+    <tr><th>Rozdział</th><th>Najważniejsze idee</th></tr>
+    <tr><td>1. Wprowadzenie</td><td><code>rustup</code>, <code>cargo</code>, pierwszy program, błędy kompilatora</td></tr>
+    <tr><td>2. Składnia i typy</td><td>Typy skalarne i złożone, funkcje, wyrażenia</td></tr>
+    <tr><td>3. Własność</td><td>Przenoszenie, pożyczanie, borrow checker, czasy życia</td></tr>
+    <tr><td>4. Sterowanie przepływem</td><td><code>mut</code>, przesłanianie, <code>if</code>, pętle, <code>match</code>, makra</td></tr>
+    <tr><td>5. Struktury danych</td><td>Wycinki, kolekcje, iteratory, struktury, enumy, <code>Option</code></td></tr>
+    <tr><td>6. Zaawansowane i testy</td><td>Typy generyczne, traity, <code>Result</code>, testy</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2>Co dalej</h2>
+  <div class="columns">
+    <div>
+      <h3>Czytaj</h3>
+      <ul class="compact">
+        <li><em>The Rust Programming Language</em> („the Book”): doc.rust-lang.org/book</li>
+        <li><em>Rust by Example</em>: doc.rust-lang.org/rust-by-example</li>
+        <li>Dokumentacja biblioteki standardowej, offline: <code>rustup doc --std</code></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Ćwicz</h3>
+      <ul class="compact">
+        <li>Zadania z kursu</li>
+        <li><em>Rustlings</em>: małe ćwiczenia, dzięki którym błędy kompilatora stają się znajome</li>
+        <li>Własne małe narzędzia. Biblioteki znajdziesz na crates.io, a ich dokumentację na docs.rs.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">Niech <code>cargo clippy</code> i <code>cargo fmt</code> wejdą ci w nawyk. Kompilator wciąż jest twoim najlepszym nauczycielem.</p>
+</section>
+
+</div>
+
+</div>
+</div>
+<script src="assets/deck.js"></script>
+</body>
+</html>

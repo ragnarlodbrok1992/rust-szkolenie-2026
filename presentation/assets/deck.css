@@ -186,6 +186,7 @@ body {
 
 .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
 .columns-wide-left { grid-template-columns: 1.3fr 1fr; }
+.columns-wider-left { grid-template-columns: 1.7fr 1fr; }
 
 .card {
   border: 1px solid var(--rule);

@@ -506,7 +506,7 @@ User {
 }</code></pre>
       <ul class="compact">
         <li><code>#[derive(Debug)]</code> generates the code that makes <code>{:?}</code> work for your type.</li>
-        <li>Without it: <em>E0277 <code>User</code> doesn't implement <code>Debug</code></em>. The compiler suggests adding the line.</li>
+        <li>A type without it can't use <code>{:?}</code>, e.g. <code>Meters</code> on the next slide: <em>E0277 <code>Meters</code> doesn't implement <code>Debug</code></em>.</li>
         <li>How <code>derive</code> works is covered with traits in chapter 6.</li>
       </ul>
     </div>
@@ -1263,7 +1263,7 @@ User {
 }</code></pre>
       <ul class="compact">
         <li><code>#[derive(Debug)]</code> generuje kod, dzięki któremu <code>{:?}</code> działa dla twojego typu.</li>
-        <li>Bez tego: <em>E0277 <code>User</code> doesn't implement <code>Debug</code></em>. Kompilator podpowiada dopisanie tej linii.</li>
+        <li>Typ bez tej linii nie obsłuży <code>{:?}</code>, np. <code>Meters</code> z następnego slajdu: <em>E0277 <code>Meters</code> doesn't implement <code>Debug</code></em>.</li>
         <li>Działanie <code>derive</code> omówimy przy traitach w rozdziale 6.</li>
       </ul>
     </div>

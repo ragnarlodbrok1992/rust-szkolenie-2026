@@ -1,0 +1,1129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Variables, control flow and macros</title>
+<link rel="stylesheet" href="assets/deck.css">
+</head>
+<body>
+<div class="viewport">
+<div class="deck" id="deck">
+
+<div class="slides" data-lang="en">
+
+<section class="slide title-slide">
+  <div class="chapter">Chapter 4</div>
+  <h1>Variables, control flow and macros</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Mutability, constants, shadowing, control flow and macros</div>
+</section>
+
+<section class="slide">
+  <h2>In this chapter</h2>
+  <ol>
+    <li><strong>Variables</strong>: mutability, constants, shadowing</li>
+    <li><strong>Control flow</strong>: <code>if</code>, <code>loop</code>, <code>while</code>, <code>for</code>, <code>match</code></li>
+    <li><strong>Macros</strong>: standard macros, formatting, writing your own with <code>macro_rules!</code></li>
+  </ol>
+  <p class="note">Code for this chapter: <code>004-variables-control-flow-macros/</code></p>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 1</div>
+  <h1>Variables</h1>
+  <div class="bar"></div>
+</section>
+
+<section class="slide">
+  <h2>Mutability</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let mut score = 0;
+println!("{score}");
+score = 10;
+score += 5;
+println!("{score}");</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>0
+15</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>let mut</code> lets a variable get a new value later.</li>
+        <li><code>+=</code>, <code>-=</code>, <code>*=</code>, <code>/=</code> update a variable in place.</li>
+        <li>Without <code>mut</code>, a value can never change. You saw the error for that in chapter 2.</li>
+        <li>Immutable by default means you can see at a glance which values change.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>What <code>mut</code> doesn't do</h2>
+  <span class="label">A mut that is never used: warning</span>
+  <pre class="tiny"><code class="lang-error">warning: variable does not need to be mutable
+ --> src/main.rs:2:9
+  |
+2 |     let mut total = 10;
+  |         ----^^^^^
+  |         |
+  |         help: remove this `mut`</code></pre>
+  <span class="label">mut keeps the type: error</span>
+  <pre class="tiny"><code class="lang-error">error[E0308]: mismatched types
+ --> src/main.rs:3:14
+  |
+2 |     let mut spaces = "   ";
+  |                      ----- expected due to this value
+3 |     spaces = spaces.len();
+  |              ^^^^^^^^^^^^ expected `&amp;str`, found `usize`</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Constants</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">const MAX_POINTS: u32 = 100_000;
+const SECONDS_IN_HOUR: u32 = 60 * 60;
+
+fn main() {
+    println!("{MAX_POINTS} {SECONDS_IN_HOUR}");
+}</code></pre>
+      <pre class="tiny"><code class="lang-error">error: missing type for `const` item
+ --> src/main.rs:1:17
+  |
+1 | const MAX_POINTS = 100_000;
+  |                 ^ help: provide a type for the constant: `: i32`</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>const</code> declares a value that never changes.</li>
+        <li>The type is <strong>required</strong>. Constants have no type inference.</li>
+        <li>The value is computed at compile time.</li>
+        <li>Constants can be declared outside functions and are named in <code>SCREAMING_SNAKE_CASE</code>.</li>
+        <li><code>static</code> also exists, for a value with one fixed place in memory. You'll rarely need it.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Shadowing</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">let spaces = "   ";
+let spaces = spaces.len();
+println!("{spaces}");
+
+let level = 1;
+{
+    let level = level * 2;
+    println!("inner: {level}");
+}
+println!("outer: {level}");</code></pre>
+    </div>
+    <div>
+      <span class="label">Output</span>
+      <pre class="small output"><code>3
+inner: 2
+outer: 1</code></pre>
+      <ul class="compact">
+        <li>A second <code>let</code> with the same name creates a <strong>new variable</strong> that hides the old one.</li>
+        <li>The new variable can have a different type: <code>&amp;str</code> becomes <code>usize</code>.</li>
+        <li>Shadowing inside a block ends at <code>}</code>, and the outer variable is visible again.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Shadowing or <code>mut</code>?</h2>
+  <table>
+    <tr><th></th><th><code>let mut</code></th><th>Shadowing</th></tr>
+    <tr><td>What happens</td><td>The same variable gets a new value</td><td>A new variable gets the old name</td></tr>
+    <tr><td>Type</td><td>Must stay the same</td><td>Can change</td></tr>
+    <tr><td>Afterwards</td><td>Can keep changing</td><td>Immutable again, unless declared <code>let mut</code></td></tr>
+    <tr><td>Typical use</td><td>Counters, totals, values updated in a loop</td><td>Transforming a value step by step: text, then its length</td></tr>
+  </table>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 2</div>
+  <h1>Control flow</h1>
+  <div class="bar"></div>
+</section>
+
+<section class="slide">
+  <h2><code>if</code>, <code>else if</code>, <code>else</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let temperature = 18;
+if temperature &lt; 10 {
+    println!("cold");
+} else if temperature &lt; 20 {
+    println!("mild");
+} else {
+    println!("warm");
+}</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>mild</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>No parentheses around the condition. The braces are required.</li>
+        <li>Conditions are checked from the top, and only the first matching branch runs.</li>
+        <li>Comparisons: <code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>. Logic: <code>&amp;&amp;</code>, <code>||</code>, <code>!</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>The condition must be a <code>bool</code></h2>
+  <pre><code class="lang-error">error[E0308]: mismatched types
+ --> src/main.rs:3:8
+  |
+3 |     if number {
+  |        ^^^^^^ expected `bool`, found integer</code></pre>
+  <ul>
+    <li>Rust has no "truthy" values. A number, a string or an array is never treated as <code>true</code> or <code>false</code>.</li>
+    <li>Write the comparison you mean: <code>if number != 0</code>.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2><code>if</code> is an expression</h2>
+  <pre><code class="lang-rust">let label = if temperature &lt; 20 { "cool" } else { "warm" };</code></pre>
+  <pre class="small"><code class="lang-error">error[E0308]: `if` and `else` have incompatible types
+ --> src/main.rs:3:55
+  |
+3 |     let label = if temperature &lt; 20 { "cool" } else { 20 };
+  |                                       ------          ^^ expected `&amp;str`, found integer
+  |                                       |
+  |                                       expected because of this</code></pre>
+  <ul>
+    <li><code>if</code> produces a value, just like a block (chapter 2). It replaces the <code>? :</code> operator from other languages.</li>
+    <li>Both branches must have the same type, because <code>label</code> has a single type.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Returning early</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">fn describe(number: i32) -> &amp;'static str {
+    if number &lt; 0 {
+        return "negative";
+    }
+    if number == 0 {
+        return "zero";
+    }
+    "positive"
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>return</code> leaves the function at once. This is its main use, promised in chapter 2.</li>
+        <li>Handle the special cases first, then write the main case as the last expression.</li>
+        <li>The return type <code>&amp;'static str</code> comes from chapter 3: string literals live for the whole program.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>loop</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let mut counter = 0;
+let result = loop {
+    counter += 1;
+    if counter == 10 {
+        break counter * 2;
+    }
+};
+println!("{result}");</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>20</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>loop</code> repeats forever, until <code>break</code>.</li>
+        <li><code>break value</code> stops the loop and makes the loop produce that value.</li>
+        <li><code>continue</code> skips the rest of the body and starts the next round.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>while</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let mut countdown = 3;
+while countdown &gt; 0 {
+    println!("{countdown}...");
+    countdown -= 1;
+}
+println!("liftoff!");</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>3...
+2...
+1...
+liftoff!</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>while</code> checks the condition before each round.</li>
+        <li>It stops as soon as the condition is <code>false</code>.</li>
+        <li>Like <code>if</code>, the condition must be a <code>bool</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>for</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">for number in 1..=3 {
+    print!("{number} ");
+}
+for number in (1..=3).rev() {
+    print!("{number} ");
+}
+let primes = [2, 3, 5, 7, 11];
+for prime in primes {
+    print!("{prime} ");
+}</code></pre>
+    </div>
+    <div>
+      <span class="label">Output</span>
+      <pre class="small output"><code>1 2 3 3 2 1 2 3 5 7 11</code></pre>
+      <ul class="compact">
+        <li><code>1..=3</code> includes 3. <code>0..3</code> stops before 3: <code>0 1 2</code>.</li>
+        <li><code>.rev()</code> goes backwards.</li>
+        <li><code>for</code> over an array visits each element. There's no index to get wrong, so it can't go out of bounds.</li>
+        <li><code>for</code> is the loop you'll use most.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">Iterators in general, slices and <code>Vec</code> are covered in chapter 5.</p>
+</section>
+
+<section class="slide">
+  <h2>Loop labels</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">'outer: for row in 1..=3 {
+    for column in 1..=3 {
+        if row * column == 4 {
+            break 'outer;
+        }
+        println!("{row} x {column} = {}", row * column);
+    }
+}</code></pre>
+    </div>
+    <div>
+      <span class="label">Output</span>
+      <pre class="small output"><code>1 x 1 = 1
+1 x 2 = 2
+1 x 3 = 3
+2 x 1 = 2</code></pre>
+      <ul class="compact">
+        <li><code>break</code> and <code>continue</code> affect the innermost loop.</li>
+        <li>A label such as <code>'outer</code> lets you break out of an outer loop.</li>
+        <li>The <code>'</code> looks like a lifetime from chapter 3, but a label is just a name for a loop.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>match</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let dice = 4;
+let message = match dice {
+    1 =&gt; "one",
+    2 | 3 =&gt; "two or three",
+    4..=6 =&gt; "four to six",
+    _ =&gt; "not a dice value",
+};
+println!("{message}");</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>four to six</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>Each <strong>arm</strong> is a pattern, then <code>=&gt;</code>, then the result.</li>
+        <li>Arms are checked from the top, and the first match wins.</li>
+        <li><code>|</code> means "or", <code>4..=6</code> is a range, and <code>_</code> matches anything.</li>
+        <li><code>match</code> is an expression, like <code>if</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>match</code> must cover every value</h2>
+  <pre class="tiny"><code class="lang-error">error[E0004]: non-exhaustive patterns: `i32::MIN..=0_i32` and `7_i32..=i32::MAX` not covered
+ --> src/main.rs:3:25
+  |
+3 |     let message = match dice {
+  |                         ^^^^ patterns `i32::MIN..=0_i32` and `7_i32..=i32::MAX` not covered
+  |
+  = note: the matched value is of type `i32`</code></pre>
+  <ul>
+    <li>Without the <code>_</code> arm, the compiler lists exactly which values aren't handled.</li>
+    <li>Its <code>help:</code> suggests adding an arm for them, or a <code>_</code> arm.</li>
+    <li>This check is what makes <code>match</code> so useful with enums and <code>Option</code> in chapter 5.</li>
+  </ul>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 3</div>
+  <h1>Macros</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Code that writes code</div>
+</section>
+
+<section class="slide">
+  <h2>What is a macro?</h2>
+  <div class="columns">
+    <div>
+      <div class="card"><h3>Expanded at compile time</h3><p>A macro call is replaced by the code it generates before the program is compiled further. The <code>!</code> marks a macro call.</p></div>
+      <div class="card"><h3>Any number of arguments</h3><p>A function has a fixed list of parameters. <code>println!</code> takes one argument, or five.</p></div>
+    </div>
+    <div>
+      <div class="card"><h3>Checked during compilation</h3><p>The format string is checked against the arguments before the program runs:</p></div>
+      <pre class="tiny"><code class="lang-error">error: 2 positional arguments in format string, but there is 1 argument
+ --> src/main.rs:2:15
+  |
+2 |     println!("{} {}", 1);
+  |               ^^ ^^   -</code></pre>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Standard macros</h2>
+  <table>
+    <tr><th>Macro</th><th>What it does</th></tr>
+    <tr><td><code>print!</code>, <code>println!</code></td><td>Print to standard output, without and with a newline</td></tr>
+    <tr><td><code>eprint!</code>, <code>eprintln!</code></td><td>Print to standard error, for errors and diagnostics</td></tr>
+    <tr><td><code>format!</code></td><td>Build a <code>String</code> using the same placeholders</td></tr>
+    <tr><td><code>dbg!</code></td><td>Print an expression, its value, file and line to standard error, then return the value</td></tr>
+    <tr><td><code>panic!</code>, <code>todo!</code>, <code>unreachable!</code></td><td>Stop the program with a message</td></tr>
+    <tr><td><code>assert!</code>, <code>assert_eq!</code></td><td>Panic if a condition doesn't hold. Used in tests (chapter 6).</td></tr>
+    <tr><td><code>vec!</code></td><td>Create a <code>Vec</code> (chapter 5)</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2><code>format!</code>, <code>eprintln!</code>, <code>dbg!</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">let name = "Ferris";
+let greeting = format!("Hello, {name}!");
+eprintln!("warning: {greeting}");
+let doubled = dbg!(21 * 2);
+println!("{doubled}");</code></pre>
+      <span class="label">Standard error</span>
+      <pre class="small output"><code>warning: Hello, Ferris!
+[src/main.rs:5:19] 21 * 2 = 42</code></pre>
+      <span class="label">Standard output</span>
+      <pre class="small output"><code>42</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>format!</code> returns the text as a <code>String</code> instead of printing it.</li>
+        <li>Standard error is a separate stream: <code>cargo run 2&gt;errors.txt</code> moves it into a file.</li>
+        <li><code>dbg!</code> shows where and what, then hands the value back, so you can wrap any expression in it.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Stopping the program</h2>
+  <pre class="small"><code class="lang-rust">fn next_level(level: u32) -> u32 {
+    match level {
+        1 | 2 =&gt; level + 1,
+        3 =&gt; todo!("the final level"),
+        _ =&gt; unreachable!("only levels 1 to 3 exist"),
+    }
+}</code></pre>
+  <table>
+    <tr><th>Call</th><th>Panic message</th></tr>
+    <tr><td><code>next_level(3)</code></td><td><code>not yet implemented: the final level</code></td></tr>
+    <tr><td><code>next_level(7)</code></td><td><code>internal error: entered unreachable code: only levels 1 to 3 exist</code></td></tr>
+  </table>
+  <p class="spaced"><code>todo!</code>: not written yet. <code>unreachable!</code>: should never run. <code>panic!</code>: any message.</p>
+</section>
+
+<section class="slide">
+  <h2>Formatting options</h2>
+  <table>
+    <tr><th>Placeholder</th><th>Meaning</th><th>Example output</th></tr>
+    <tr><td><code>{:&gt;6}</code> <code>{:&lt;6}</code> <code>{:^6}</code></td><td>Right-align, left-align or center in 6 columns</td><td><code>[    ab]</code> <code>[ab    ]</code> <code>[  ab  ]</code></td></tr>
+    <tr><td><code>{:.2}</code></td><td>Two decimal places, rounded: <code>9.87654</code></td><td><code>9.88</code></td></tr>
+    <tr><td><code>{0} {1} {0}</code></td><td>Arguments by position: <code>"a"</code>, <code>"b"</code></td><td><code>a b a</code></td></tr>
+    <tr><td><code>{:x}</code> <code>{:b}</code></td><td>Hexadecimal, binary: <code>255</code>, <code>5</code></td><td><code>ff</code> <code>101</code></td></tr>
+    <tr><td><code>{:#?}</code></td><td>Pretty debug format, one field per line</td><td>Multi-line output</td></tr>
+    <tr><td><code>{{</code> <code>}}</code></td><td>Literal braces</td><td><code>{}</code></td></tr>
+  </table>
+  <p class="note">The <code>[ ]</code> around the aligned examples show the padding.</p>
+</section>
+
+<section class="slide">
+  <h2>Writing a macro</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">macro_rules! square {
+    ($value:expr) =&gt; {
+        $value * $value
+    };
+}
+
+println!("{}", square!(7));
+println!("{}", square!(1 + 2));</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>49
+9</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>macro_rules!</code> defines a macro. Each rule is a pattern, <code>=&gt;</code>, and the code to generate.</li>
+        <li><code>$value:expr</code> matches any expression and names it <code>$value</code>.</li>
+        <li><code>square!(1 + 2)</code> is <code>9</code>, not <code>5</code>: the macro works on whole expressions, not on text.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Repetition</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">macro_rules! sum {
+    ($($value:expr),*) =&gt; {
+        0 $(+ $value)*
+    };
+}
+
+println!("{}", sum!(1, 2, 3));
+println!("{}", sum!());</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>6
+0</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>$( … ),*</code> matches the pattern zero or more times, separated by commas.</li>
+        <li><code>$( … )*</code> in the generated code repeats once for each match.</li>
+        <li><code>sum!(1, 2, 3)</code> becomes <code>0 + 1 + 2 + 3</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Macro or function?</h2>
+  <div class="columns">
+    <div>
+      <h3>Prefer a function</h3>
+      <ul class="compact">
+        <li>Its signature documents and checks the types.</li>
+        <li>Compiler errors are clearer.</li>
+        <li>It's easier to read, test and document.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Use a macro when you need</h3>
+      <ul class="compact">
+        <li>a variable number of arguments</li>
+        <li>checks at compile time, like format strings</li>
+        <li>to generate repetitive code you can't write as a function</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">You'll use macros every day, but write your own much less often.</p>
+</section>
+
+<section class="slide">
+  <h2>Summary</h2>
+  <ul>
+    <li><code>mut</code> allows new values of the same type. <code>const</code> needs a type and never changes.</li>
+    <li>Shadowing creates a new variable with the same name and can change the type.</li>
+    <li><code>if</code> and <code>match</code> are expressions. Conditions must be <code>bool</code>, and <code>match</code> must cover every value.</li>
+    <li><code>loop</code> repeats until <code>break</code>, <code>while</code> checks a condition, and <code>for</code> walks ranges and arrays.</li>
+    <li>Macros expand at compile time: printing, formatting, <code>dbg!</code>, and <code>todo!</code> and other panics.</li>
+    <li><code>macro_rules!</code> defines macros with patterns and repetition.</li>
+  </ul>
+  <p class="note">Next: chapter 5, data structures and compound types.</p>
+</section>
+
+</div>
+
+<div class="slides" data-lang="pl">
+
+<section class="slide title-slide">
+  <div class="chapter">Rozdział 4</div>
+  <h1>Zmienne, sterowanie przepływem i makra</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Modyfikowalność, stałe, przesłanianie, sterowanie przepływem i makra</div>
+</section>
+
+<section class="slide">
+  <h2>W tym rozdziale</h2>
+  <ol>
+    <li><strong>Zmienne</strong>: modyfikowalność, stałe, przesłanianie</li>
+    <li><strong>Sterowanie przepływem</strong>: <code>if</code>, <code>loop</code>, <code>while</code>, <code>for</code>, <code>match</code></li>
+    <li><strong>Makra</strong>: makra standardowe, formatowanie, własne makra z <code>macro_rules!</code></li>
+  </ol>
+  <p class="note">Kod do tego rozdziału: <code>004-variables-control-flow-macros/</code></p>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 1</div>
+  <h1>Zmienne</h1>
+  <div class="bar"></div>
+</section>
+
+<section class="slide">
+  <h2>Modyfikowalność</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let mut score = 0;
+println!("{score}");
+score = 10;
+score += 5;
+println!("{score}");</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>0
+15</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>let mut</code> pozwala później nadać zmiennej nową wartość.</li>
+        <li><code>+=</code>, <code>-=</code>, <code>*=</code>, <code>/=</code> zmieniają wartość zmiennej w miejscu.</li>
+        <li>Bez <code>mut</code> wartość nigdy się nie zmieni. Błąd przy próbie zmiany widzieliśmy w rozdziale 2.</li>
+        <li>Domyślna niezmienność pozwala od razu zobaczyć, które wartości się zmieniają.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Czego <code>mut</code> nie robi</h2>
+  <span class="label">Nieużywane mut: ostrzeżenie</span>
+  <pre class="tiny"><code class="lang-error">warning: variable does not need to be mutable
+ --> src/main.rs:2:9
+  |
+2 |     let mut total = 10;
+  |         ----^^^^^
+  |         |
+  |         help: remove this `mut`</code></pre>
+  <span class="label">mut zachowuje typ: błąd</span>
+  <pre class="tiny"><code class="lang-error">error[E0308]: mismatched types
+ --> src/main.rs:3:14
+  |
+2 |     let mut spaces = "   ";
+  |                      ----- expected due to this value
+3 |     spaces = spaces.len();
+  |              ^^^^^^^^^^^^ expected `&amp;str`, found `usize`</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Stałe</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">const MAX_POINTS: u32 = 100_000;
+const SECONDS_IN_HOUR: u32 = 60 * 60;
+
+fn main() {
+    println!("{MAX_POINTS} {SECONDS_IN_HOUR}");
+}</code></pre>
+      <pre class="tiny"><code class="lang-error">error: missing type for `const` item
+ --> src/main.rs:1:17
+  |
+1 | const MAX_POINTS = 100_000;
+  |                 ^ help: provide a type for the constant: `: i32`</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>const</code> deklaruje wartość, która nigdy się nie zmienia.</li>
+        <li>Typ jest <strong>obowiązkowy</strong>. Stałe nie mają wnioskowania typów.</li>
+        <li>Wartość jest obliczana w czasie kompilacji.</li>
+        <li>Stałe można deklarować poza funkcjami, a ich nazwy piszemy w <code>SCREAMING_SNAKE_CASE</code>.</li>
+        <li>Istnieje też <code>static</code>: wartość w jednym, stałym miejscu w pamięci. Rzadko się przydaje.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Przesłanianie (shadowing)</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">let spaces = "   ";
+let spaces = spaces.len();
+println!("{spaces}");
+
+let level = 1;
+{
+    let level = level * 2;
+    println!("inner: {level}");
+}
+println!("outer: {level}");</code></pre>
+    </div>
+    <div>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>3
+inner: 2
+outer: 1</code></pre>
+      <ul class="compact">
+        <li>Drugie <code>let</code> z tą samą nazwą tworzy <strong>nową zmienną</strong>, która przesłania starą.</li>
+        <li>Nowa zmienna może mieć inny typ: <code>&amp;str</code> zmienia się w <code>usize</code>.</li>
+        <li>Przesłanianie wewnątrz bloku kończy się przy <code>}</code> i zewnętrzna zmienna jest znów widoczna.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Przesłanianie czy <code>mut</code>?</h2>
+  <table>
+    <tr><th></th><th><code>let mut</code></th><th>Przesłanianie</th></tr>
+    <tr><td>Co się dzieje</td><td>Ta sama zmienna dostaje nową wartość</td><td>Nowa zmienna dostaje starą nazwę</td></tr>
+    <tr><td>Typ</td><td>Musi pozostać ten sam</td><td>Może się zmienić</td></tr>
+    <tr><td>Później</td><td>Można dalej zmieniać</td><td>Znowu niezmienna, chyba że zadeklarujesz <code>let mut</code></td></tr>
+    <tr><td>Typowe użycie</td><td>Liczniki, sumy, wartości zmieniane w pętli</td><td>Przekształcanie wartości krok po kroku: tekst, potem jego długość</td></tr>
+  </table>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 2</div>
+  <h1>Sterowanie przepływem</h1>
+  <div class="bar"></div>
+</section>
+
+<section class="slide">
+  <h2><code>if</code>, <code>else if</code>, <code>else</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let temperature = 18;
+if temperature &lt; 10 {
+    println!("cold");
+} else if temperature &lt; 20 {
+    println!("mild");
+} else {
+    println!("warm");
+}</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>mild</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>Bez nawiasów wokół warunku. Klamry są obowiązkowe.</li>
+        <li>Warunki są sprawdzane od góry i wykonuje się tylko pierwsza pasująca gałąź.</li>
+        <li>Porównania: <code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>. Logika: <code>&amp;&amp;</code>, <code>||</code>, <code>!</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Warunek musi być typu <code>bool</code></h2>
+  <pre><code class="lang-error">error[E0308]: mismatched types
+ --> src/main.rs:3:8
+  |
+3 |     if number {
+  |        ^^^^^^ expected `bool`, found integer</code></pre>
+  <ul>
+    <li>Rust nie ma wartości „prawdziwopodobnych” (truthy). Liczba, napis ani tablica nigdy nie są traktowane jak <code>true</code> albo <code>false</code>.</li>
+    <li>Zapisz porównanie, o które ci chodzi: <code>if number != 0</code>.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2><code>if</code> to wyrażenie</h2>
+  <pre><code class="lang-rust">let label = if temperature &lt; 20 { "cool" } else { "warm" };</code></pre>
+  <pre class="small"><code class="lang-error">error[E0308]: `if` and `else` have incompatible types
+ --> src/main.rs:3:55
+  |
+3 |     let label = if temperature &lt; 20 { "cool" } else { 20 };
+  |                                       ------          ^^ expected `&amp;str`, found integer
+  |                                       |
+  |                                       expected because of this</code></pre>
+  <ul>
+    <li><code>if</code> daje wartość, tak jak blok (rozdział 2). Zastępuje operator <code>? :</code> z innych języków.</li>
+    <li>Obie gałęzie muszą mieć ten sam typ, bo <code>label</code> ma jeden typ.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Wcześniejszy powrót z funkcji</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">fn describe(number: i32) -> &amp;'static str {
+    if number &lt; 0 {
+        return "negative";
+    }
+    if number == 0 {
+        return "zero";
+    }
+    "positive"
+}</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>return</code> od razu kończy funkcję. To jego główne zastosowanie, zapowiedziane w rozdziale 2.</li>
+        <li>Najpierw obsłuż przypadki szczególne, a główny przypadek zapisz jako ostatnie wyrażenie.</li>
+        <li>Typ zwracany <code>&amp;'static str</code> znamy z rozdziału 3: literały napisowe żyją przez cały czas działania programu.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>loop</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let mut counter = 0;
+let result = loop {
+    counter += 1;
+    if counter == 10 {
+        break counter * 2;
+    }
+};
+println!("{result}");</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>20</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>loop</code> powtarza się w nieskończoność, aż do <code>break</code>.</li>
+        <li><code>break value</code> kończy pętlę, a pętla daje tę wartość.</li>
+        <li><code>continue</code> pomija resztę ciała i zaczyna kolejny obieg.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>while</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let mut countdown = 3;
+while countdown &gt; 0 {
+    println!("{countdown}...");
+    countdown -= 1;
+}
+println!("liftoff!");</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>3...
+2...
+1...
+liftoff!</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>while</code> sprawdza warunek przed każdym obiegiem.</li>
+        <li>Kończy się, gdy tylko warunek jest <code>false</code>.</li>
+        <li>Tak jak w <code>if</code>, warunek musi być typu <code>bool</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>for</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">for number in 1..=3 {
+    print!("{number} ");
+}
+for number in (1..=3).rev() {
+    print!("{number} ");
+}
+let primes = [2, 3, 5, 7, 11];
+for prime in primes {
+    print!("{prime} ");
+}</code></pre>
+    </div>
+    <div>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>1 2 3 3 2 1 2 3 5 7 11</code></pre>
+      <ul class="compact">
+        <li><code>1..=3</code> zawiera 3. <code>0..3</code> kończy się przed 3: <code>0 1 2</code>.</li>
+        <li><code>.rev()</code> idzie od końca.</li>
+        <li><code>for</code> po tablicy odwiedza każdy element. Nie ma indeksu, który można pomylić, więc nie da się wyjść poza zakres.</li>
+        <li><code>for</code> to pętla, której będziesz używać najczęściej.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">Iteratory ogólnie, wycinki i <code>Vec</code> omówimy w rozdziale 5.</p>
+</section>
+
+<section class="slide">
+  <h2>Etykiety pętli</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">'outer: for row in 1..=3 {
+    for column in 1..=3 {
+        if row * column == 4 {
+            break 'outer;
+        }
+        println!("{row} x {column} = {}", row * column);
+    }
+}</code></pre>
+    </div>
+    <div>
+      <span class="label">Wynik</span>
+      <pre class="small output"><code>1 x 1 = 1
+1 x 2 = 2
+1 x 3 = 3
+2 x 1 = 2</code></pre>
+      <ul class="compact">
+        <li><code>break</code> i <code>continue</code> działają na najbardziej wewnętrzną pętlę.</li>
+        <li>Etykieta, np. <code>'outer</code>, pozwala wyjść z pętli zewnętrznej.</li>
+        <li><code>'</code> wygląda jak czas życia z rozdziału 3, ale etykieta to tylko nazwa pętli.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>match</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let dice = 4;
+let message = match dice {
+    1 =&gt; "one",
+    2 | 3 =&gt; "two or three",
+    4..=6 =&gt; "four to six",
+    _ =&gt; "not a dice value",
+};
+println!("{message}");</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>four to six</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li>Każde <strong>ramię</strong> (arm) to wzorzec, potem <code>=&gt;</code>, potem wynik.</li>
+        <li>Ramiona są sprawdzane od góry i wygrywa pierwsze pasujące.</li>
+        <li><code>|</code> oznacza „lub”, <code>4..=6</code> to zakres, a <code>_</code> pasuje do wszystkiego.</li>
+        <li><code>match</code> to wyrażenie, tak jak <code>if</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2><code>match</code> musi obsłużyć każdą wartość</h2>
+  <pre class="tiny"><code class="lang-error">error[E0004]: non-exhaustive patterns: `i32::MIN..=0_i32` and `7_i32..=i32::MAX` not covered
+ --> src/main.rs:3:25
+  |
+3 |     let message = match dice {
+  |                         ^^^^ patterns `i32::MIN..=0_i32` and `7_i32..=i32::MAX` not covered
+  |
+  = note: the matched value is of type `i32`</code></pre>
+  <ul>
+    <li>Bez ramienia <code>_</code> kompilator wypisuje dokładnie, których wartości brakuje.</li>
+    <li>Jego <code>help:</code> podpowiada dodanie dla nich ramienia albo ramienia <code>_</code>.</li>
+    <li>Właśnie dzięki temu sprawdzeniu <code>match</code> jest tak przydatny z enumami i <code>Option</code> w rozdziale 5.</li>
+  </ul>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 3</div>
+  <h1>Makra</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Kod, który pisze kod</div>
+</section>
+
+<section class="slide">
+  <h2>Czym jest makro?</h2>
+  <div class="columns">
+    <div>
+      <div class="card"><h3>Rozwijane w czasie kompilacji</h3><p>Wywołanie makra jest zastępowane wygenerowanym kodem, zanim program zostanie dalej skompilowany. <code>!</code> oznacza wywołanie makra.</p></div>
+      <div class="card"><h3>Dowolna liczba argumentów</h3><p>Funkcja ma stałą listę parametrów. <code>println!</code> przyjmie jeden argument albo pięć.</p></div>
+    </div>
+    <div>
+      <div class="card"><h3>Sprawdzane podczas kompilacji</h3><p>Napis formatujący jest porównywany z argumentami, zanim program zostanie uruchomiony:</p></div>
+      <pre class="tiny"><code class="lang-error">error: 2 positional arguments in format string, but there is 1 argument
+ --> src/main.rs:2:15
+  |
+2 |     println!("{} {}", 1);
+  |               ^^ ^^   -</code></pre>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Makra standardowe</h2>
+  <table>
+    <tr><th>Makro</th><th>Co robi</th></tr>
+    <tr><td><code>print!</code>, <code>println!</code></td><td>Wypisuje na standardowe wyjście, bez i ze znakiem nowej linii</td></tr>
+    <tr><td><code>eprint!</code>, <code>eprintln!</code></td><td>Wypisuje na standardowe wyjście błędów, dla błędów i diagnostyki</td></tr>
+    <tr><td><code>format!</code></td><td>Buduje <code>String</code> z tych samych znaczników</td></tr>
+    <tr><td><code>dbg!</code></td><td>Wypisuje wyrażenie, jego wartość, plik i wiersz na wyjście błędów, a potem zwraca wartość</td></tr>
+    <tr><td><code>panic!</code>, <code>todo!</code>, <code>unreachable!</code></td><td>Zatrzymują program z komunikatem</td></tr>
+    <tr><td><code>assert!</code>, <code>assert_eq!</code></td><td>Panikują, gdy warunek nie jest spełniony. Używane w testach (rozdział 6).</td></tr>
+    <tr><td><code>vec!</code></td><td>Tworzy <code>Vec</code> (rozdział 5)</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2><code>format!</code>, <code>eprintln!</code>, <code>dbg!</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre class="small"><code class="lang-rust">let name = "Ferris";
+let greeting = format!("Hello, {name}!");
+eprintln!("warning: {greeting}");
+let doubled = dbg!(21 * 2);
+println!("{doubled}");</code></pre>
+      <span class="label">Wyjście błędów</span>
+      <pre class="small output"><code>warning: Hello, Ferris!
+[src/main.rs:5:19] 21 * 2 = 42</code></pre>
+      <span class="label">Standardowe wyjście</span>
+      <pre class="small output"><code>42</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>format!</code> zwraca tekst jako <code>String</code>, zamiast go wypisywać.</li>
+        <li>Wyjście błędów to osobny strumień: <code>cargo run 2&gt;errors.txt</code> przenosi je do pliku.</li>
+        <li><code>dbg!</code> pokazuje, gdzie i co, a potem oddaje wartość, więc można nim objąć dowolne wyrażenie.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Zatrzymywanie programu</h2>
+  <pre class="small"><code class="lang-rust">fn next_level(level: u32) -> u32 {
+    match level {
+        1 | 2 =&gt; level + 1,
+        3 =&gt; todo!("the final level"),
+        _ =&gt; unreachable!("only levels 1 to 3 exist"),
+    }
+}</code></pre>
+  <table>
+    <tr><th>Wywołanie</th><th>Komunikat paniki</th></tr>
+    <tr><td><code>next_level(3)</code></td><td><code>not yet implemented: the final level</code></td></tr>
+    <tr><td><code>next_level(7)</code></td><td><code>internal error: entered unreachable code: only levels 1 to 3 exist</code></td></tr>
+  </table>
+  <p class="spaced"><code>todo!</code>: do napisania. <code>unreachable!</code>: nie powinno się wykonać. <code>panic!</code>: dowolny komunikat.</p>
+</section>
+
+<section class="slide">
+  <h2>Opcje formatowania</h2>
+  <table>
+    <tr><th>Znacznik</th><th>Znaczenie</th><th>Przykładowy wynik</th></tr>
+    <tr><td><code>{:&gt;6}</code> <code>{:&lt;6}</code> <code>{:^6}</code></td><td>Do prawej, do lewej albo do środka w 6 kolumnach</td><td><code>[    ab]</code> <code>[ab    ]</code> <code>[  ab  ]</code></td></tr>
+    <tr><td><code>{:.2}</code></td><td>Dwa miejsca po przecinku, z zaokrągleniem: <code>9.87654</code></td><td><code>9.88</code></td></tr>
+    <tr><td><code>{0} {1} {0}</code></td><td>Argumenty według pozycji: <code>"a"</code>, <code>"b"</code></td><td><code>a b a</code></td></tr>
+    <tr><td><code>{:x}</code> <code>{:b}</code></td><td>Szesnastkowo, dwójkowo: <code>255</code>, <code>5</code></td><td><code>ff</code> <code>101</code></td></tr>
+    <tr><td><code>{:#?}</code></td><td>Czytelny format debug, jedno pole w linii</td><td>Wynik w wielu liniach</td></tr>
+    <tr><td><code>{{</code> <code>}}</code></td><td>Dosłowne klamry</td><td><code>{}</code></td></tr>
+  </table>
+  <p class="note">Nawiasy <code>[ ]</code> wokół wyrównanych przykładów pokazują dopełnienie spacjami.</p>
+</section>
+
+<section class="slide">
+  <h2>Pisanie makra</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">macro_rules! square {
+    ($value:expr) =&gt; {
+        $value * $value
+    };
+}
+
+println!("{}", square!(7));
+println!("{}", square!(1 + 2));</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>49
+9</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>macro_rules!</code> definiuje makro. Każda reguła to wzorzec, <code>=&gt;</code> i kod do wygenerowania.</li>
+        <li><code>$value:expr</code> pasuje do dowolnego wyrażenia i nazywa je <code>$value</code>.</li>
+        <li><code>square!(1 + 2)</code> daje <code>9</code>, a nie <code>5</code>: makro działa na całych wyrażeniach, a nie na tekście.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Powtórzenia</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">macro_rules! sum {
+    ($($value:expr),*) =&gt; {
+        0 $(+ $value)*
+    };
+}
+
+println!("{}", sum!(1, 2, 3));
+println!("{}", sum!());</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>6
+0</code></pre>
+    </div>
+    <div>
+      <ul class="compact">
+        <li><code>$( … ),*</code> dopasowuje wzorzec zero lub więcej razy, oddzielony przecinkami.</li>
+        <li><code>$( … )*</code> w generowanym kodzie powtarza się raz dla każdego dopasowania.</li>
+        <li><code>sum!(1, 2, 3)</code> zmienia się w <code>0 + 1 + 2 + 3</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Makro czy funkcja?</h2>
+  <div class="columns">
+    <div>
+      <h3>Wybieraj funkcję</h3>
+      <ul class="compact">
+        <li>Jej sygnatura dokumentuje i sprawdza typy.</li>
+        <li>Błędy kompilatora są czytelniejsze.</li>
+        <li>Łatwiej ją czytać, testować i dokumentować.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Użyj makra, gdy potrzebujesz</h3>
+      <ul class="compact">
+        <li>zmiennej liczby argumentów</li>
+        <li>sprawdzania w czasie kompilacji, np. napisów formatujących</li>
+        <li>generowania powtarzalnego kodu, którego nie da się zapisać jako funkcji</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">Makr będziesz używać codziennie, ale własne pisać znacznie rzadziej.</p>
+</section>
+
+<section class="slide">
+  <h2>Podsumowanie</h2>
+  <ul>
+    <li><code>mut</code> pozwala na nowe wartości tego samego typu. <code>const</code> wymaga typu i nigdy się nie zmienia.</li>
+    <li>Przesłanianie tworzy nową zmienną o tej samej nazwie i może zmienić typ.</li>
+    <li><code>if</code> i <code>match</code> to wyrażenia. Warunki muszą być typu <code>bool</code>, a <code>match</code> musi obsłużyć każdą wartość.</li>
+    <li><code>loop</code> powtarza aż do <code>break</code>, <code>while</code> sprawdza warunek, a <code>for</code> przechodzi po zakresach i tablicach.</li>
+    <li>Makra rozwijają się w czasie kompilacji: wypisywanie, formatowanie, <code>dbg!</code>, a także <code>todo!</code> i inne panic.</li>
+    <li><code>macro_rules!</code> definiuje makra za pomocą wzorców i powtórzeń.</li>
+  </ul>
+  <p class="note">Dalej: rozdział 5, struktury danych i typy złożone.</p>
+</section>
+
+</div>
+
+</div>
+</div>
+<script src="assets/deck.js"></script>
+</body>
+</html>

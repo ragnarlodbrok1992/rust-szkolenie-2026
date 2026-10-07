@@ -5,6 +5,7 @@ fn main() {
     ownership_and_functions();
     references();
     mutable_references();
+    borrow_ends_at_last_use();
     lifetimes();
 }
 
@@ -53,11 +54,19 @@ fn ownership_and_functions() {
     take_ownership(text);
     // println!("{text}");
 
+    let number = 5;
+    copy_number(number);
+    println!("{number}");
+
     let returned = give_back(String::from("hi"));
     println!("{returned}");
 }
 
 fn take_ownership(value: String) {
+    println!("{value}");
+}
+
+fn copy_number(value: i32) {
     println!("{value}");
 }
 
@@ -92,12 +101,6 @@ fn mutable_references() {
     add_world(&mut text);
     println!("{text}");
 
-    let reader = &text;
-    println!("{reader}");
-    let writer = &mut text;
-    writer.push_str(", again");
-    println!("{text}");
-
     // let first = &mut text;
     // let second = &mut text;
     // println!("{first} {second}");
@@ -109,6 +112,17 @@ fn mutable_references() {
 
 fn add_world(value: &mut String) {
     value.push_str(", world");
+}
+
+fn borrow_ends_at_last_use() {
+    println!("--- A borrow ends at its last use ---");
+
+    let mut text = String::from("hello");
+    let reader = &text;
+    println!("{reader}");
+    let writer = &mut text;
+    writer.push_str(", world");
+    println!("{text}");
 }
 
 // fn make_greeting() -> &String {

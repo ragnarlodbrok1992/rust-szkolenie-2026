@@ -4,249 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Introduction to Rust</title>
-<style>
-:root {
-  --bg: #f4f1ec;
-  --stage: #fffdf9;
-  --text: #1f1b16;
-  --muted: #6b6259;
-  --accent: #b7410e;
-  --accent-soft: #f6e3d8;
-  --rule: #e2dcd3;
-  --code-bg: #2b2520;
-  --code-text: #f1ebe4;
-  --tok-keyword: #ff9e64;
-  --tok-string: #a6d189;
-  --tok-number: #e5c890;
-  --tok-macro: #8caaee;
-  --tok-type: #e5c890;
-  --tok-prompt: #a39a90;
-  --tok-section: #ff9e64;
-  --tok-key: #8caaee;
-  --tok-error: #ff7a7a;
-  --tok-help: #7fd4c4;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #14110f;
-    --stage: #1d1916;
-    --text: #efe9e2;
-    --muted: #a39a90;
-    --accent: #f07a45;
-    --accent-soft: #3a2519;
-    --rule: #3a332d;
-    --code-bg: #0f0d0b;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #14110f;
-  --stage: #1d1916;
-  --text: #efe9e2;
-  --muted: #a39a90;
-  --accent: #f07a45;
-  --accent-soft: #3a2519;
-  --rule: #3a332d;
-  --code-bg: #0f0d0b;
-}
-
-* { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
-  overflow: hidden;
-}
-
-.viewport {
-  position: fixed;
-  inset: 0;
-  display: grid;
-  place-items: center;
-}
-.deck {
-  position: relative;
-  width: 1280px;
-  height: 720px;
-  flex: none;
-  transform-origin: center center;
-}
-
-.slide {
-  position: absolute;
-  inset: 0;
-  display: none;
-  flex-direction: column;
-  padding: 56px 72px 64px;
-  background: var(--stage);
-  border-radius: 6px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
-  font-size: 26px;
-  line-height: 1.45;
-}
-.slide.active { display: flex; }
-
-.slide h1 { font-size: 64px; line-height: 1.1; margin: 0 0 16px; letter-spacing: -0.02em; }
-.slide h2 {
-  font-size: 40px;
-  margin: 0 0 28px;
-  padding-bottom: 14px;
-  border-bottom: 3px solid var(--accent);
-  letter-spacing: -0.01em;
-}
-.slide h3 { font-size: 26px; margin: 0 0 8px; color: var(--accent); }
-.slide p { margin: 0 0 16px; }
-.slide ul, .slide ol { margin: 0 0 16px; padding-left: 1.2em; }
-.slide li { margin-bottom: 10px; }
-.slide li::marker { color: var(--accent); }
-.slide strong { color: var(--accent); }
-.slide a { color: var(--accent); }
-
-.slide code {
-  font-family: "Cascadia Code", "JetBrains Mono", Consolas, "Courier New", monospace;
-  font-size: 0.88em;
-  font-variant-ligatures: none;
-  white-space: nowrap;
-  background: var(--accent-soft);
-  padding: 1px 6px;
-  border-radius: 4px;
-}
-.slide pre {
-  margin: 0 0 18px;
-  padding: 18px 22px;
-  background: var(--code-bg);
-  color: var(--code-text);
-  border-radius: 6px;
-  font-size: 22px;
-  line-height: 1.5;
-  overflow: hidden;
-}
-.slide pre code { background: none; padding: 0; font-size: 1em; color: inherit; white-space: pre; }
-.slide pre.small { font-size: 19px; }
-
-.label {
-  display: inline-block;
-  font-size: 15px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-
-.tok-keyword { color: var(--tok-keyword); }
-.tok-string { color: var(--tok-string); }
-.tok-number { color: var(--tok-number); }
-.tok-macro { color: var(--tok-macro); }
-.tok-type { color: var(--tok-type); }
-.tok-prompt { color: var(--tok-prompt); user-select: none; }
-.tok-section { color: var(--tok-section); }
-.tok-key { color: var(--tok-key); }
-.tok-error { color: var(--tok-error); font-weight: 600; }
-.tok-help { color: var(--tok-help); }
-
-.columns { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
-.columns-wide-left { grid-template-columns: 1.3fr 1fr; }
-
-.card {
-  border: 1px solid var(--rule);
-  border-left: 4px solid var(--accent);
-  border-radius: 6px;
-  padding: 16px 20px;
-  margin-bottom: 14px;
-}
-.card p { margin: 0; font-size: 22px; color: var(--muted); }
-
-.note {
-  margin-top: auto;
-  font-size: 20px;
-  color: var(--muted);
-  border-top: 1px solid var(--rule);
-  padding-top: 12px;
-}
-
-table { border-collapse: collapse; width: 100%; font-size: 22px; }
-th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
-th { color: var(--muted); font-size: 16px; text-transform: uppercase; letter-spacing: 0.06em; }
-
-.title-slide { justify-content: center; }
-.title-slide .chapter {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  margin-bottom: 18px;
-}
-.title-slide .subtitle { font-size: 30px; color: var(--muted); }
-.title-slide .bar { width: 120px; height: 6px; background: var(--accent); margin: 28px 0; border-radius: 3px; }
-
-.flow { display: flex; align-items: stretch; gap: 18px; margin: 10px 0 28px; }
-.flow .step {
-  flex: 1;
-  border: 2px solid var(--accent);
-  border-radius: 8px;
-  padding: 16px 18px;
-  text-align: center;
-}
-.flow .step b { display: block; font-size: 28px; color: var(--accent); margin-bottom: 4px; font-family: "Cascadia Code", Consolas, monospace; }
-.flow .step span { font-size: 20px; color: var(--muted); }
-.flow .arrow { align-self: center; font-size: 30px; color: var(--muted); }
-
-.footer {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 4px;
-  background: var(--rule);
-}
-.footer .progress { height: 100%; width: 0; background: var(--accent); transition: width 0.2s ease; }
-.counter {
-  position: fixed;
-  right: 16px;
-  bottom: 12px;
-  font-size: 14px;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-.slides:not(.current) { display: none; }
-.lang-switch {
-  position: fixed;
-  top: 12px;
-  right: 16px;
-  display: flex;
-  border: 1px solid var(--rule);
-  border-radius: 6px;
-  overflow: hidden;
-  background: var(--stage);
-  z-index: 10;
-}
-.lang-switch button {
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  padding: 6px 12px;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-.lang-switch button[aria-pressed="true"] { background: var(--accent); color: #fff; }
-.hint-text:not(.current) { display: none; }
-.help-hint {
-  position: fixed;
-  left: 16px;
-  bottom: 12px;
-  font-size: 14px;
-  color: var(--muted);
-}
-</style>
+<link rel="stylesheet" href="assets/deck.css">
 </head>
 <body>
 <div class="viewport">
 <div class="deck" id="deck">
+
 <div class="slides" data-lang="en">
 
 <section class="slide title-slide">
@@ -356,7 +119,7 @@ th { color: var(--muted); font-size: 16px; text-transform: uppercase; letter-spa
     <div>
       <span class="label">Windows</span>
       <p>Download and run <code>rustup-init.exe</code> from <a href="https://rustup.rs">rustup.rs</a>.</p>
-      <p style="font-size:22px;color:var(--muted)">It needs the Visual Studio C++ Build Tools. The installer offers to set them up.</p>
+      <p class="aside">It needs the Visual Studio C++ Build Tools. The installer offers to set them up.</p>
       <span class="label">Linux and macOS</span>
       <pre class="small"><code class="lang-shell">$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh</code></pre>
     </div>
@@ -387,7 +150,7 @@ $ cargo --version</code></pre>
       <h3>Editions</h3>
       <p>An edition is a set of language changes that you opt into per project.</p>
       <p><code>2015</code> · <code>2018</code> · <code>2021</code> · <code>2024</code></p>
-      <p style="font-size:22px;color:var(--muted)">Projects on different editions can still use each other as dependencies.</p>
+      <p class="aside">Projects on different editions can still use each other as dependencies.</p>
     </div>
   </div>
 </section>
@@ -427,14 +190,14 @@ $ cargo --version</code></pre>
       <pre><code class="lang-shell">$ cargo new hello</code></pre>
       <span class="label">Existing directory</span>
       <pre><code class="lang-shell">$ cargo init</code></pre>
-      <p style="font-size:22px;color:var(--muted)">By default both also create a Git repository and a <code>.gitignore</code>.</p>
+      <p class="aside">By default both also create a Git repository and a <code>.gitignore</code>.</p>
     </div>
     <div>
       <span class="label">What we ran for this chapter</span>
       <pre class="small"><code class="lang-shell">$ cargo init --vcs none \
     --name introduction \
     001-introduction</code></pre>
-      <ul style="font-size:22px">
+      <ul class="compact">
         <li><code>--vcs none</code>: the course repository already uses Git.</li>
         <li><code>--name</code>: a package name can't start with a digit.</li>
       </ul>
@@ -657,7 +420,7 @@ rand = "0.10.3"</code></pre>
   <h2>Dlaczego Rust?</h2>
   <div class="columns">
     <div>
-      <div class="card"><h3>Bezpieczeństwo pamięci bez garbage collectora</h3><p>Kompilator sprawdza użycie pamięci, zanim program zostanie uruchomiony. Szczegóły w rozdziale 3.</p></div>
+      <div class="card"><h3>Bezpieczeństwo pamięci bez garbage collectora</h3><p>Kompilator sprawdza użycie pamięci przed uruchomieniem programu. Szczegóły w rozdziale 3.</p></div>
       <div class="card"><h3>Wydajność</h3><p>Kompilacja do natywnego kodu maszynowego. Szybkość porównywalna z C i C++.</p></div>
       <div class="card"><h3>Współbieżność bez obaw</h3><p>Wyścigi danych są wykrywane podczas kompilacji.</p></div>
     </div>
@@ -726,7 +489,7 @@ rand = "0.10.3"</code></pre>
     <div>
       <span class="label">Windows</span>
       <p>Pobierz i uruchom <code>rustup-init.exe</code> ze strony <a href="https://rustup.rs">rustup.rs</a>.</p>
-      <p style="font-size:22px;color:var(--muted)">Wymaga Visual Studio C++ Build Tools. Instalator proponuje ich instalację.</p>
+      <p class="aside">Wymaga Visual Studio C++ Build Tools. Instalator proponuje ich instalację.</p>
       <span class="label">Linux i macOS</span>
       <pre class="small"><code class="lang-shell">$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh</code></pre>
     </div>
@@ -757,7 +520,7 @@ $ cargo --version</code></pre>
       <h3>Edycje</h3>
       <p>Edycja to zestaw zmian w języku, które włącza się osobno dla każdego projektu.</p>
       <p><code>2015</code> · <code>2018</code> · <code>2021</code> · <code>2024</code></p>
-      <p style="font-size:22px;color:var(--muted)">Projekty w różnych edycjach mogą nadal korzystać z siebie nawzajem jako zależności.</p>
+      <p class="aside">Projekty w różnych edycjach mogą nadal korzystać z siebie nawzajem jako zależności.</p>
     </div>
   </div>
 </section>
@@ -797,14 +560,14 @@ $ cargo --version</code></pre>
       <pre><code class="lang-shell">$ cargo new hello</code></pre>
       <span class="label">Istniejący katalog</span>
       <pre><code class="lang-shell">$ cargo init</code></pre>
-      <p style="font-size:22px;color:var(--muted)">Domyślnie oba polecenia tworzą też repozytorium Git i plik <code>.gitignore</code>.</p>
+      <p class="aside">Domyślnie oba polecenia tworzą też repozytorium Git i plik <code>.gitignore</code>.</p>
     </div>
     <div>
       <span class="label">Co uruchomiliśmy w tym rozdziale</span>
       <pre class="small"><code class="lang-shell">$ cargo init --vcs none \
     --name introduction \
     001-introduction</code></pre>
-      <ul style="font-size:22px">
+      <ul class="compact">
         <li><code>--vcs none</code>: repozytorium kursu już używa Gita.</li>
         <li><code>--name</code>: nazwa pakietu nie może zaczynać się od cyfry.</li>
       </ul>
@@ -989,180 +752,6 @@ rand = "0.10.3"</code></pre>
 
 </div>
 </div>
-
-<div class="footer"><div class="progress" id="progress"></div></div>
-<div class="lang-switch" role="group" aria-label="Language">
-  <button type="button" data-lang="en" aria-pressed="false">EN</button>
-  <button type="button" data-lang="pl" aria-pressed="false">PL</button>
-</div>
-<div class="help-hint">
-  <span class="hint-text" data-lang="en">← → to navigate · F for fullscreen · T for theme · L for language</span>
-  <span class="hint-text" data-lang="pl">← → nawigacja · F pełny ekran · T motyw · L język</span>
-</div>
-<div class="counter" id="counter"></div>
-
-<script>
-(function () {
-  var rustKeywords = "as|break|const|continue|crate|else|enum|fn|for|if|impl|in|let|loop|match|mod|move|mut|pub|ref|return|self|Self|static|struct|super|trait|type|unsafe|use|where|while|true|false";
-
-  function escapeHtml(text) {
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
-
-  function wrap(className, text) {
-    return '<span class="' + className + '">' + text + "</span>";
-  }
-
-  function highlightRust(source) {
-    var pattern = new RegExp(
-      '("(?:\\\\.|[^"\\\\])*")' +
-      "|\\b(" + rustKeywords + ")\\b" +
-      "|\\b([a-z_][a-z0-9_]*!)" +
-      "|\\b([A-Z][A-Za-z0-9_]*)\\b" +
-      "|\\b(\\d+)\\b",
-      "g"
-    );
-    return source.replace(pattern, function (match, string, keyword, macro, type, number) {
-      if (string) return wrap("tok-string", string);
-      if (keyword) return wrap("tok-keyword", keyword);
-      if (macro) return wrap("tok-macro", macro);
-      if (type) return wrap("tok-type", type);
-      return wrap("tok-number", number);
-    });
-  }
-
-  function highlightToml(source) {
-    return source.split("\n").map(function (line) {
-      if (/^\s*\[.*\]\s*$/.test(line)) return wrap("tok-section", line);
-      var keyValue = line.match(/^(\s*[A-Za-z0-9_-]+)(\s*=\s*)(.*)$/);
-      if (!keyValue) return line;
-      var value = keyValue[3].replace(/("[^"]*")/g, function (s) { return wrap("tok-string", s); });
-      return wrap("tok-key", keyValue[1]) + keyValue[2] + value;
-    }).join("\n");
-  }
-
-  function highlightShell(source) {
-    return source.split("\n").map(function (line) {
-      return line.replace(/^\$ /, wrap("tok-prompt", "$ "));
-    }).join("\n");
-  }
-
-  function highlightError(source) {
-    return source.split("\n").map(function (line) {
-      if (/^error/.test(line)) return wrap("tok-error", line);
-      return line.replace(/(help: .*)$/, function (s) { return wrap("tok-help", s); });
-    }).join("\n");
-  }
-
-  var highlighters = {
-    "lang-rust": highlightRust,
-    "lang-toml": highlightToml,
-    "lang-shell": highlightShell,
-    "lang-error": highlightError
-  };
-
-  Array.prototype.forEach.call(document.querySelectorAll("pre code"), function (block) {
-    var source = escapeHtml(block.textContent);
-    Object.keys(highlighters).forEach(function (language) {
-      if (block.classList.contains(language)) source = highlighters[language](source);
-    });
-    block.innerHTML = source;
-  });
-
-  var deck = document.getElementById("deck");
-  var counter = document.getElementById("counter");
-  var progress = document.getElementById("progress");
-  var titles = { en: "Introduction to Rust", pl: "Wprowadzenie do Rusta" };
-  var slides = [];
-  var current = 0;
-  var language = "en";
-
-  function readSavedLanguage() {
-    var fromUrl = new URLSearchParams(location.search).get("lang");
-    if (fromUrl && titles[fromUrl]) return fromUrl;
-    try {
-      var saved = localStorage.getItem("slides-language");
-      if (saved && titles[saved]) return saved;
-    } catch (error) {}
-    return "en";
-  }
-
-  function setLanguage(newLanguage) {
-    language = newLanguage;
-    try { localStorage.setItem("slides-language", language); } catch (error) {}
-    document.documentElement.lang = language;
-    document.title = titles[language];
-    Array.prototype.forEach.call(document.querySelectorAll(".slides, .hint-text"), function (element) {
-      element.classList.toggle("current", element.dataset.lang === language);
-    });
-    Array.prototype.forEach.call(document.querySelectorAll(".lang-switch button"), function (button) {
-      button.setAttribute("aria-pressed", String(button.dataset.lang === language));
-    });
-    slides = document.querySelectorAll('.slides[data-lang="' + language + '"] .slide');
-    show(current);
-  }
-
-  Array.prototype.forEach.call(document.querySelectorAll(".lang-switch button"), function (button) {
-    button.addEventListener("click", function () { setLanguage(button.dataset.lang); });
-  });
-
-  function readSlideFromHash() {
-    var number = parseInt(location.hash.replace("#", ""), 10);
-    if (isNaN(number)) return 0;
-    return Math.max(number - 1, 0);
-  }
-
-  function show(index) {
-    current = Math.min(Math.max(index, 0), slides.length - 1);
-    Array.prototype.forEach.call(slides, function (slide, i) {
-      slide.classList.toggle("active", i === current);
-    });
-    counter.textContent = (current + 1) + " / " + slides.length;
-    progress.style.width = ((current + 1) / slides.length * 100) + "%";
-    if (location.hash !== "#" + (current + 1)) history.replaceState(null, "", "#" + (current + 1));
-  }
-
-  function fit() {
-    var scale = Math.min(window.innerWidth / 1280, (window.innerHeight - 40) / 720);
-    deck.style.transform = "scale(" + scale + ")";
-  }
-
-  function toggleTheme() {
-    var root = document.documentElement;
-    var dark = root.dataset.theme
-      ? root.dataset.theme === "dark"
-      : window.matchMedia("(prefers-color-scheme: dark)").matches;
-    root.dataset.theme = dark ? "light" : "dark";
-  }
-
-  document.addEventListener("keydown", function (event) {
-    if (event.key === "ArrowRight" || event.key === "PageDown" || event.key === " ") show(current + 1);
-    else if (event.key === "ArrowLeft" || event.key === "PageUp") show(current - 1);
-    else if (event.key === "Home") show(0);
-    else if (event.key === "End") show(slides.length - 1);
-    else if (event.key === "f" || event.key === "F") {
-      if (document.fullscreenElement) document.exitFullscreen();
-      else document.documentElement.requestFullscreen();
-    }
-    else if (event.key === "t" || event.key === "T") toggleTheme();
-    else if (event.key === "l" || event.key === "L") setLanguage(language === "en" ? "pl" : "en");
-    else return;
-    event.preventDefault();
-  });
-
-  document.addEventListener("click", function (event) {
-    if (event.target.closest("a, button")) return;
-    if (event.clientX > window.innerWidth / 2) show(current + 1);
-    else show(current - 1);
-  });
-
-  window.addEventListener("hashchange", function () { show(readSlideFromHash()); });
-  window.addEventListener("resize", fit);
-
-  fit();
-  current = readSlideFromHash();
-  setLanguage(readSavedLanguage());
-})();
-</script>
+<script src="assets/deck.js"></script>
 </body>
 </html>

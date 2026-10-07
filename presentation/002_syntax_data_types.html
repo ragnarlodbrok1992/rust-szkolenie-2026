@@ -1,0 +1,1275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Syntax basics and data types</title>
+<link rel="stylesheet" href="assets/deck.css">
+</head>
+<body>
+<div class="viewport">
+<div class="deck" id="deck">
+
+<div class="slides" data-lang="en">
+
+<section class="slide title-slide">
+  <div class="chapter">Chapter 2</div>
+  <h1>Syntax basics and data types</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Primitive and compound types, functions and their syntax</div>
+</section>
+
+<section class="slide">
+  <h2>In this chapter</h2>
+  <ol>
+    <li><strong>Syntax basics</strong>: program structure, naming, comments, <code>let</code>, printing values</li>
+    <li><strong>Scalar types</strong>: integers, floating-point numbers, booleans, characters</li>
+    <li><strong>Types in practice</strong>: inference, arithmetic, conversions, overflow</li>
+    <li><strong>Compound types</strong>: tuples, arrays, string literals</li>
+    <li><strong>Functions</strong>: parameters, return values, statements and expressions</li>
+  </ol>
+  <p class="note">Code for this chapter: <code>002-syntax-data-types/</code></p>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 1</div>
+  <h1>Syntax basics</h1>
+  <div class="bar"></div>
+</section>
+
+<section class="slide">
+  <h2>Anatomy of a program</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">fn main() {
+    let greeting = "Hello";
+    println!("{greeting}, Rust!");
+}</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>Hello, Rust!</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>fn main()</code> is a function. Its body is a <strong>block</strong> between <code>{</code> and <code>}</code>.</li>
+        <li>Each statement ends with <code>;</code>.</li>
+        <li>Indent with 4 spaces. <code>cargo fmt</code> does it for you.</li>
+        <li>Line breaks and extra spaces don't change the meaning.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Naming conventions</h2>
+  <table>
+    <tr><th>Kind of name</th><th>Convention</th><th>Examples</th></tr>
+    <tr><td>Variables, functions</td><td><code>snake_case</code></td><td><code>dice_roll</code>, <code>print_sum</code></td></tr>
+    <tr><td>Types</td><td><code>UpperCamelCase</code></td><td><code>String</code>, <code>Vec</code></td></tr>
+    <tr><td>Constants</td><td><code>SCREAMING_SNAKE_CASE</code></td><td><code>MAX_POINTS</code> (chapter 4)</td></tr>
+  </table>
+  <span class="label spaced">The compiler checks the convention</span>
+  <pre class="small"><code class="lang-error">warning: variable `diceRoll` should have a snake case name
+ --> src/main.rs:2:9
+  |
+2 |     let diceRoll = 6;
+  |         ^^^^^^^^ help: convert the identifier to snake case: `dice_roll`</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Comments</h2>
+  <pre><code class="lang-rust">// A line comment runs to the end of the line.
+
+/* A block comment
+   can span several lines. */
+
+/// A doc comment describes the item below it.
+fn main() {}</code></pre>
+  <ul>
+    <li><code>//</code> is the most common kind of comment.</li>
+    <li><code>///</code> doc comments become documentation pages with <code>cargo doc</code>.</li>
+  </ul>
+  <p class="note">The course code has no comments. Explanations live on these slides.</p>
+</section>
+
+<section class="slide">
+  <h2>Variables with <code>let</code></h2>
+  <pre><code class="lang-rust">let age = 30;
+let height: f64 = 1.75;
+let name = "Ferris";</code></pre>
+  <ul>
+    <li><code>let</code> gives a name to a value. The name is called a <strong>variable</strong> or a <strong>binding</strong>.</li>
+    <li><code>: f64</code> is a <strong>type annotation</strong>. It's optional when the compiler can work out the type.</li>
+    <li>A variable must get a value before it's used.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Immutable by default</h2>
+  <pre class="small"><code class="lang-error">error[E0384]: cannot assign twice to immutable variable `age`
+ --> src/main.rs:3:5
+  |
+2 |     let age = 30;
+  |         --- first assignment to `age`
+3 |     age = 31;
+  |     ^^^^^^^^ cannot assign twice to immutable variable</code></pre>
+  <ul>
+    <li>Once a variable has a value, it can't be changed.</li>
+    <li>That makes code easier to follow: a name always means the same value.</li>
+  </ul>
+  <p class="note">Mutable variables (<code>mut</code>), constants and shadowing are covered in chapter 4.</p>
+</section>
+
+<section class="slide">
+  <h2>Printing values</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let age = 30;
+let height = 1.75;
+println!("{}", age);
+println!("{age} years, {height} m");
+println!("{:?}", (age, height));</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>30
+30 years, 1.75 m
+(30, 1.75)</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>{}</code> is replaced by the next argument.</li>
+        <li><code>{age}</code> prints the variable with that name.</li>
+        <li><code>{:?}</code> uses the <strong>debug</strong> format. It can print tuples and arrays, which <code>{}</code> can't.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 2</div>
+  <h1>Scalar types</h1>
+  <div class="bar"></div>
+  <div class="subtitle">A scalar type holds a single value</div>
+</section>
+
+<section class="slide">
+  <h2>Four scalar types</h2>
+  <div class="columns">
+    <div>
+      <div class="card"><h3>Integers</h3><p>Whole numbers: <code>42</code>, <code>-7</code>, <code>1_000</code></p></div>
+      <div class="card"><h3>Floating-point numbers</h3><p>Numbers with a fraction: <code>3.14</code>, <code>2.0</code></p></div>
+    </div>
+    <div>
+      <div class="card"><h3>Booleans</h3><p>Truth values: <code>true</code>, <code>false</code></p></div>
+      <div class="card"><h3>Characters</h3><p>Single Unicode characters: <code>'a'</code>, <code>'🦀'</code></p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Integer types</h2>
+  <div class="columns">
+    <div>
+      <table>
+        <tr><th>Size</th><th>Signed</th><th>Unsigned</th></tr>
+        <tr><td>8-bit</td><td><code>i8</code></td><td><code>u8</code></td></tr>
+        <tr><td>16-bit</td><td><code>i16</code></td><td><code>u16</code></td></tr>
+        <tr><td>32-bit</td><td><code>i32</code></td><td><code>u32</code></td></tr>
+        <tr><td>64-bit</td><td><code>i64</code></td><td><code>u64</code></td></tr>
+        <tr><td>128-bit</td><td><code>i128</code></td><td><code>u128</code></td></tr>
+        <tr><td>32/64-bit (platform)</td><td><code>isize</code></td><td><code>usize</code></td></tr>
+      </table>
+    </div>
+    <div>
+      <ul>
+        <li><code>i</code> types can be negative. <code>u</code> types can't.</li>
+        <li><code>i8</code>: <code>-128</code> to <code>127</code>. <code>u8</code>: <code>0</code> to <code>255</code>.</li>
+        <li><strong><code>i32</code></strong> is the default. Use it unless you have a reason not to.</li>
+        <li><strong><code>usize</code></strong> is used for lengths and indexes.</li>
+        <li>Each type knows its limits: <code>u8::MAX</code> is <code>255</code>, <code>i8::MIN</code> is <code>-128</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Integer literals</h2>
+  <div class="columns">
+    <div>
+      <table>
+        <tr><th>Literal</th><th>Written as</th><th>Value</th></tr>
+        <tr><td>Decimal</td><td><code>98_222</code></td><td><code>98222</code></td></tr>
+        <tr><td>Hexadecimal</td><td><code>0xff</code></td><td><code>255</code></td></tr>
+        <tr><td>Octal</td><td><code>0o77</code></td><td><code>63</code></td></tr>
+        <tr><td>Binary</td><td><code>0b1111_0000</code></td><td><code>240</code></td></tr>
+        <tr><td>Byte (<code>u8</code>)</td><td><code>b'A'</code></td><td><code>65</code></td></tr>
+      </table>
+    </div>
+    <div>
+      <ul>
+        <li><code>_</code> is a visual separator. The compiler ignores it.</li>
+        <li>A <strong>suffix</strong> sets the type: <code>42u8</code>, <code>1_000_i64</code>.</li>
+        <li>When nothing else decides the type, an integer literal is an <code>i32</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Floating-point numbers</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let price = 2.5;
+let ratio: f32 = 0.75;
+println!("{}", 0.1 + 0.2);</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>0.30000000000000004</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><strong><code>f64</code></strong> (double precision) is the default.</li>
+        <li><code>f32</code> (single precision) uses half the memory and is less precise.</li>
+        <li>Many decimal fractions can't be stored exactly, so results can be slightly off.</li>
+        <li>Don't use floats for money.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Booleans and characters</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let is_ready = true;
+let has_errors: bool = false;
+
+let letter = 'R';
+let digit: char = '7';
+let crab = '🦀';</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>bool</code> is either <code>true</code> or <code>false</code>.</li>
+        <li><code>char</code> is written in <strong>single quotes</strong>.</li>
+        <li>A <code>char</code> takes 4 bytes and holds any Unicode character: letters, digits, emoji, Chinese characters.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Single quotes vs double quotes</h2>
+  <pre class="small"><code class="lang-error">error[E0308]: mismatched types
+ --> src/main.rs:2:24
+  |
+2 |     let letter: char = "a";
+  |                 ----   ^^^ expected `char`, found `&amp;str`
+  |                 |
+  |                 expected due to this
+  |
+help: if you meant to write a `char` literal, use single quotes</code></pre>
+  <ul>
+    <li><code>'a'</code> is a single character, of type <code>char</code>.</li>
+    <li><code>"a"</code> is text, of type <code>&amp;str</code>. More in part 4.</li>
+  </ul>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 3</div>
+  <h1>Types in practice</h1>
+  <div class="bar"></div>
+</section>
+
+<section class="slide">
+  <h2>Type inference</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let count = 10;
+let average = 2.5;
+let small: u8 = 10;
+let tiny = 10_u8;</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li>The compiler <strong>infers</strong> types: <code>count</code> is an <code>i32</code>, <code>average</code> is an <code>f64</code>.</li>
+        <li>An annotation or a suffix picks a different type.</li>
+        <li>Rust is <strong>statically typed</strong>: every value's type is known at compile time and never changes.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Types must match</h2>
+  <pre class="small"><code class="lang-error">error[E0308]: mismatched types
+ --> src/main.rs:2:22
+  |
+2 |     let whole: i32 = 3.5;
+  |                ---   ^^^ expected `i32`, found floating-point number</code></pre>
+  <pre class="small"><code class="lang-error">error[E0277]: cannot add a float to an integer
+ --> src/main.rs:3:19
+  |
+3 |     let total = 5 + 2.5;
+  |                   ^ no implementation for `{integer} + {float}`</code></pre>
+  <ul>
+    <li>Rust never converts between types on its own, not even from an integer to a float. Both sides of <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code> must have the same type.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Arithmetic</h2>
+  <div class="columns">
+    <div>
+      <table>
+        <tr><th>Expression</th><th>Result</th></tr>
+        <tr><td><code>7 + 2</code></td><td><code>9</code></td></tr>
+        <tr><td><code>7 - 2</code></td><td><code>5</code></td></tr>
+        <tr><td><code>7 * 2</code></td><td><code>14</code></td></tr>
+        <tr><td><code>7 / 2</code></td><td><code>3</code></td></tr>
+        <tr><td><code>-7 / 2</code></td><td><code>-3</code></td></tr>
+        <tr><td><code>7 % 2</code></td><td><code>1</code></td></tr>
+        <tr><td><code>7.0 / 2.0</code></td><td><code>3.5</code></td></tr>
+      </table>
+    </div>
+    <div>
+      <ul>
+        <li>Integer division drops the fraction: it <strong>truncates toward zero</strong>.</li>
+        <li><code>%</code> gives the remainder of a division.</li>
+        <li>To get <code>3.5</code>, divide floating-point numbers.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Converting with <code>as</code></h2>
+  <div class="columns">
+    <div>
+      <pre><code class="lang-rust">let whole = 7;
+let half = whole as f64 / 2.0;
+let truncated = 3.99_f64 as i32;
+let big: i32 = 300;
+let wrapped = big as u8;
+let letter_code = 'A' as u8;</code></pre>
+      <span class="label">Values</span>
+      <pre class="output"><code>half: 3.5
+truncated: 3
+wrapped: 44
+letter_code: 65</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>as</code> converts between primitive types explicitly.</li>
+        <li>Float to integer drops the fraction.</li>
+        <li>Converting to a smaller integer keeps only the bits that fit: 300 becomes 44.</li>
+        <li><code>as</code> never fails, so it can lose data <strong>silently</strong>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Overflow</h2>
+  <p>A <code>u8</code> holds 0 to 255. What happens with 256?</p>
+  <table>
+    <tr><th>Situation</th><th>Result</th></tr>
+    <tr><td><code>let x: u8 = 256;</code></td><td>Compile error: <em>literal out of range for <code>u8</code></em></td></tr>
+    <tr><td><code>let x: u8 = 255 + 1;</code></td><td>Compile error: <em>this arithmetic operation will overflow</em></td></tr>
+    <tr><td>Value known only at runtime, debug build</td><td>The program stops: <em>attempt to add with overflow</em></td></tr>
+    <tr><td>Value known only at runtime, release build</td><td>Wraps around silently: 255 + 1 = 0</td></tr>
+  </table>
+  <p class="note">When a program stops like this, Rust calls it a <strong>panic</strong>.</p>
+</section>
+
+<section class="slide">
+  <h2>Overflow at runtime</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">fn main() {
+    println!("{}", add_one(255));
+}
+
+fn add_one(value: u8) -> u8 {
+    value + 1
+}</code></pre>
+    </div>
+    <div>
+      <span class="label command">cargo run</span>
+      <pre class="small output"><code>thread 'main' (38736) panicked at src/main.rs:6:5:
+attempt to add with overflow</code></pre>
+      <span class="label command">cargo run --release</span>
+      <pre class="small output"><code>0</code></pre>
+    </div>
+  </div>
+  <ul>
+    <li>Inside <code>add_one</code>, the compiler doesn't know the value, so it can't report the error early.</li>
+    <li>Functions are covered in part 5.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Choosing what overflow does</h2>
+  <table>
+    <tr><th>Method</th><th>Example</th><th>Result</th></tr>
+    <tr><td><code>wrapping_add</code></td><td><code>250_u8.wrapping_add(10)</code></td><td><code>4</code>: wraps around</td></tr>
+    <tr><td><code>saturating_add</code></td><td><code>250_u8.saturating_add(10)</code></td><td><code>255</code>: stops at the limit</td></tr>
+    <tr><td><code>checked_add</code></td><td><code>250_u8.checked_add(10)</code></td><td>Reports that it overflowed</td></tr>
+  </table>
+  <ul class="spaced">
+    <li>When overflow is expected, say so explicitly with one of these methods.</li>
+    <li>Each one also exists for subtraction and multiplication: <code>wrapping_sub</code>, <code>saturating_mul</code>.</li>
+    <li>The result of <code>checked_add</code> is an <code>Option</code>, covered in chapter 5.</li>
+  </ul>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 4</div>
+  <h1>Compound types</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Grouping several values into one</div>
+</section>
+
+<section class="slide">
+  <h2>Tuples</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let person: (&amp;str, i32, f64) = ("Alice", 30, 1.68);
+println!("{}", person.0);
+println!("{}", person.1);
+println!("{:?}", person);</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>Alice
+30
+("Alice", 30, 1.68)</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li>A tuple groups values that can have <strong>different types</strong>.</li>
+        <li>Its length is fixed.</li>
+        <li>Fields are read by position: <code>.0</code>, <code>.1</code>, <code>.2</code>.</li>
+        <li><code>person.3</code> doesn't compile: <em>no field <code>3</code></em>.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">Unpacking a tuple into variables (destructuring) is covered in chapter 5.</p>
+</section>
+
+<section class="slide">
+  <h2>Arrays</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let primes = [2, 3, 5, 7, 11];
+let zeros = [0; 5];
+let first: i32 = primes[0];
+println!("{} {}", first, primes.len());
+println!("{:?}", zeros);</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>2 5
+[0, 0, 0, 0, 0]</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li>All elements have the <strong>same type</strong>.</li>
+        <li>The length is part of the type: <code>primes</code> is a <code>[i32; 5]</code>.</li>
+        <li><code>[0; 5]</code> is five zeros.</li>
+        <li>Indexes start at <code>0</code> and have the type <code>usize</code>.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">Slices, iterating and the growable <code>Vec</code> are covered in chapter 5.</p>
+</section>
+
+<section class="slide">
+  <h2>Index out of bounds</h2>
+  <span class="label">Index known at compile time</span>
+  <pre class="small"><code class="lang-error">error: this operation will panic at runtime
+ --> src/main.rs:3:20
+  |
+3 |     println!("{}", primes[10]);
+  |                    ^^^^^^^^^^ index out of bounds: the length is 5 but the index is 10</code></pre>
+  <span class="label">Index known only at runtime</span>
+  <pre class="small output"><code>thread 'main' (10996) panicked at src/main.rs:7:20:
+index out of bounds: the len is 5 but the index is 10</code></pre>
+  <ul>
+    <li>Rust always checks array indexes.</li>
+    <li>A bad index stops the program instead of reading memory it doesn't own, which C would allow.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>String literals</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let name = "Ferris";
+let greeting: &amp;str = "Hello, world!";
+let initial = 'F';</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li>Text in double quotes is a <strong>string literal</strong>, of type <code>&amp;str</code>.</li>
+        <li><code>"F"</code> is text. <code>'F'</code> is a single <code>char</code>.</li>
+        <li>The <code>&amp;</code> means a <strong>reference</strong>, covered in chapter 3.</li>
+        <li>Text you can build and change at runtime (<code>String</code>) is covered in chapter 5.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Part 5</div>
+  <h1>Functions</h1>
+  <div class="bar"></div>
+</section>
+
+<section class="slide">
+  <h2>Defining functions</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">fn main() {
+    print_sum(3, 4);
+}
+
+fn print_sum(first: i32, second: i32) {
+    println!("{first} + {second} = {}", first + second);
+}</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>3 + 4 = 7</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>fn</code>, a name, parameters in <code>( )</code>, a body in <code>{ }</code>.</li>
+        <li>Every parameter needs a type. Rust never infers parameter types.</li>
+        <li>The order of definitions in the file doesn't matter.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Returning values</h2>
+  <div class="columns">
+    <div>
+      <span class="label">Last expression</span>
+      <pre><code class="lang-rust">fn square(number: i32) -> i32 {
+    number * number
+}</code></pre>
+      <span class="label">With return</span>
+      <pre><code class="lang-rust">fn square(number: i32) -> i32 {
+    return number * number;
+}</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>-&gt; i32</code> declares the return type.</li>
+        <li>The last expression in the body, <strong>without</strong> <code>;</code>, is the return value.</li>
+        <li><code>return</code> also works. It's mostly used to leave a function early (with <code>if</code>, chapter 4).</li>
+        <li>Both versions do the same thing. The first one is the usual style, and <code>cargo clippy</code> warns about the second: <em>unneeded <code>return</code> statement</em>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Statements and expressions</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let y = {
+    let x = 3;
+    x + 1
+};
+println!("{y}");</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>4</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li>A <strong>statement</strong> does something and has no value: <code>let x = 3;</code></li>
+        <li>An <strong>expression</strong> produces a value: <code>5</code>, <code>x + 1</code>, a function call, a block.</li>
+        <li>A block's value is its last expression.</li>
+        <li>Adding <code>;</code> turns an expression into a statement.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>The unit type <code>()</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let nothing = print_sum(3, 4);
+println!("{:?}", nothing);</code></pre>
+      <span class="label">Output</span>
+      <pre class="output"><code>3 + 4 = 7
+()</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>()</code> is the empty tuple, called <strong>unit</strong>. It means "no meaningful value".</li>
+        <li>A function without <code>-&gt;</code> returns <code>()</code>.</li>
+        <li><code>fn main()</code> returns <code>()</code> too.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>The stray semicolon</h2>
+  <pre class="small"><code class="lang-error">error[E0308]: mismatched types
+ --> src/main.rs:5:27
+  |
+5 | fn square(number: i32) -> i32 {
+  |    ------                 ^^^ expected `i32`, found `()`
+  |    |
+  |    implicitly returns `()` as its body has no tail or `return` expression
+6 |     number * number;
+  |                    - help: remove this semicolon to return this value</code></pre>
+  <p>The <code>;</code> turns the last expression into a statement, so the body returns <code>()</code> instead of an <code>i32</code>.</p>
+</section>
+
+<section class="slide">
+  <h2>Summary</h2>
+  <ul>
+    <li><code>let</code> creates a variable. Variables are immutable by default.</li>
+    <li>Scalar types: integers (<code>i32</code> by default), floats (<code>f64</code> by default), <code>bool</code>, <code>char</code>.</li>
+    <li>Rust never converts types on its own. Use <code>as</code>, and remember it can lose data.</li>
+    <li>Overflow is a compile error, a panic in debug builds, or a silent wrap in release builds. Use <code>wrapping_</code>, <code>saturating_</code> or <code>checked_</code> when you expect it.</li>
+    <li>Tuples group different types. Arrays hold a fixed number of values of one type.</li>
+    <li>Functions declare parameter and return types. The last expression without <code>;</code> is the return value.</li>
+  </ul>
+  <p class="note">Next: chapter 3, ownership and references.</p>
+</section>
+
+</div>
+
+<div class="slides" data-lang="pl">
+
+<section class="slide title-slide">
+  <div class="chapter">Rozdział 2</div>
+  <h1>Podstawy składni i typy danych</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Typy proste i złożone, funkcje i ich składnia</div>
+</section>
+
+<section class="slide">
+  <h2>W tym rozdziale</h2>
+  <ol>
+    <li><strong>Podstawy składni</strong>: budowa programu, nazewnictwo, komentarze, <code>let</code>, wypisywanie wartości</li>
+    <li><strong>Typy skalarne</strong>: liczby całkowite, liczby zmiennoprzecinkowe, wartości logiczne, znaki</li>
+    <li><strong>Typy w praktyce</strong>: wnioskowanie typów, arytmetyka, konwersje, przepełnienie</li>
+    <li><strong>Typy złożone</strong>: krotki, tablice, literały napisowe</li>
+    <li><strong>Funkcje</strong>: parametry, zwracane wartości, instrukcje i wyrażenia</li>
+  </ol>
+  <p class="note">Kod do tego rozdziału: <code>002-syntax-data-types/</code></p>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 1</div>
+  <h1>Podstawy składni</h1>
+  <div class="bar"></div>
+</section>
+
+<section class="slide">
+  <h2>Budowa programu</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">fn main() {
+    let greeting = "Hello";
+    println!("{greeting}, Rust!");
+}</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>Hello, Rust!</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>fn main()</code> to funkcja. Jej ciało to <strong>blok</strong> między <code>{</code> a <code>}</code>.</li>
+        <li>Każda instrukcja kończy się znakiem <code>;</code>.</li>
+        <li>Wcięcia to 4 spacje. <code>cargo fmt</code> zrobi je za ciebie.</li>
+        <li>Podziały linii i dodatkowe spacje nie zmieniają znaczenia kodu.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Konwencje nazewnictwa</h2>
+  <table>
+    <tr><th>Rodzaj nazwy</th><th>Konwencja</th><th>Przykłady</th></tr>
+    <tr><td>Zmienne, funkcje</td><td><code>snake_case</code></td><td><code>dice_roll</code>, <code>print_sum</code></td></tr>
+    <tr><td>Typy</td><td><code>UpperCamelCase</code></td><td><code>String</code>, <code>Vec</code></td></tr>
+    <tr><td>Stałe</td><td><code>SCREAMING_SNAKE_CASE</code></td><td><code>MAX_POINTS</code> (rozdział 4)</td></tr>
+  </table>
+  <span class="label spaced">Kompilator pilnuje konwencji</span>
+  <pre class="small"><code class="lang-error">warning: variable `diceRoll` should have a snake case name
+ --> src/main.rs:2:9
+  |
+2 |     let diceRoll = 6;
+  |         ^^^^^^^^ help: convert the identifier to snake case: `dice_roll`</code></pre>
+</section>
+
+<section class="slide">
+  <h2>Komentarze</h2>
+  <pre><code class="lang-rust">// A line comment runs to the end of the line.
+
+/* A block comment
+   can span several lines. */
+
+/// A doc comment describes the item below it.
+fn main() {}</code></pre>
+  <ul>
+    <li><code>//</code> to najczęściej używany rodzaj komentarza.</li>
+    <li>Z komentarzy dokumentujących <code>///</code> polecenie <code>cargo doc</code> tworzy strony dokumentacji.</li>
+  </ul>
+  <p class="note">Kod kursu nie ma komentarzy. Wyjaśnienia są na tych slajdach.</p>
+</section>
+
+<section class="slide">
+  <h2>Zmienne i <code>let</code></h2>
+  <pre><code class="lang-rust">let age = 30;
+let height: f64 = 1.75;
+let name = "Ferris";</code></pre>
+  <ul>
+    <li><code>let</code> nadaje nazwę wartości. Taką nazwę nazywamy <strong>zmienną</strong> albo <strong>wiązaniem</strong> (binding).</li>
+    <li><code>: f64</code> to <strong>adnotacja typu</strong>. Jest opcjonalna, jeśli kompilator sam ustali typ.</li>
+    <li>Zmienna musi dostać wartość, zanim zostanie użyta.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Domyślnie niezmienne</h2>
+  <pre class="small"><code class="lang-error">error[E0384]: cannot assign twice to immutable variable `age`
+ --> src/main.rs:3:5
+  |
+2 |     let age = 30;
+  |         --- first assignment to `age`
+3 |     age = 31;
+  |     ^^^^^^^^ cannot assign twice to immutable variable</code></pre>
+  <ul>
+    <li>Gdy zmienna ma już wartość, nie można jej zmienić.</li>
+    <li>Dzięki temu kod łatwiej śledzić: nazwa zawsze oznacza tę samą wartość.</li>
+  </ul>
+  <p class="note">Zmienne modyfikowalne (<code>mut</code>), stałe i przesłanianie omówimy w rozdziale 4.</p>
+</section>
+
+<section class="slide">
+  <h2>Wypisywanie wartości</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let age = 30;
+let height = 1.75;
+println!("{}", age);
+println!("{age} years, {height} m");
+println!("{:?}", (age, height));</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>30
+30 years, 1.75 m
+(30, 1.75)</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>{}</code> zostaje zastąpione kolejnym argumentem.</li>
+        <li><code>{age}</code> wypisuje zmienną o tej nazwie.</li>
+        <li><code>{:?}</code> używa formatu <strong>debug</strong>. Potrafi wypisać krotki i tablice, czego <code>{}</code> nie umie.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 2</div>
+  <h1>Typy skalarne</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Typ skalarny przechowuje pojedynczą wartość</div>
+</section>
+
+<section class="slide">
+  <h2>Cztery typy skalarne</h2>
+  <div class="columns">
+    <div>
+      <div class="card"><h3>Liczby całkowite</h3><p>Liczby bez części ułamkowej: <code>42</code>, <code>-7</code>, <code>1_000</code></p></div>
+      <div class="card"><h3>Liczby zmiennoprzecinkowe</h3><p>Liczby z częścią ułamkową: <code>3.14</code>, <code>2.0</code></p></div>
+    </div>
+    <div>
+      <div class="card"><h3>Wartości logiczne</h3><p>Prawda i fałsz: <code>true</code>, <code>false</code></p></div>
+      <div class="card"><h3>Znaki</h3><p>Pojedyncze znaki Unicode: <code>'a'</code>, <code>'🦀'</code></p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Typy całkowite</h2>
+  <div class="columns">
+    <div>
+      <table>
+        <tr><th>Rozmiar</th><th>Ze znakiem</th><th>Bez znaku</th></tr>
+        <tr><td>8 bitów</td><td><code>i8</code></td><td><code>u8</code></td></tr>
+        <tr><td>16 bitów</td><td><code>i16</code></td><td><code>u16</code></td></tr>
+        <tr><td>32 bity</td><td><code>i32</code></td><td><code>u32</code></td></tr>
+        <tr><td>64 bity</td><td><code>i64</code></td><td><code>u64</code></td></tr>
+        <tr><td>128 bitów</td><td><code>i128</code></td><td><code>u128</code></td></tr>
+        <tr><td>32/64 bity (platforma)</td><td><code>isize</code></td><td><code>usize</code></td></tr>
+      </table>
+    </div>
+    <div>
+      <ul>
+        <li>Typy <code>i</code> mogą być ujemne. Typy <code>u</code> nie mogą.</li>
+        <li><code>i8</code>: od <code>-128</code> do <code>127</code>. <code>u8</code>: od <code>0</code> do <code>255</code>.</li>
+        <li><strong><code>i32</code></strong> to typ domyślny. Używaj go, chyba że masz powód, by wybrać inny.</li>
+        <li><strong><code>usize</code></strong> służy do długości i indeksów.</li>
+        <li>Każdy typ zna swoje granice: <code>u8::MAX</code> to <code>255</code>, <code>i8::MIN</code> to <code>-128</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Literały całkowite</h2>
+  <div class="columns">
+    <div>
+      <table>
+        <tr><th>Literał</th><th>Zapis</th><th>Wartość</th></tr>
+        <tr><td>Dziesiętny</td><td><code>98_222</code></td><td><code>98222</code></td></tr>
+        <tr><td>Szesnastkowy</td><td><code>0xff</code></td><td><code>255</code></td></tr>
+        <tr><td>Ósemkowy</td><td><code>0o77</code></td><td><code>63</code></td></tr>
+        <tr><td>Dwójkowy</td><td><code>0b1111_0000</code></td><td><code>240</code></td></tr>
+        <tr><td>Bajt (<code>u8</code>)</td><td><code>b'A'</code></td><td><code>65</code></td></tr>
+      </table>
+    </div>
+    <div>
+      <ul>
+        <li><code>_</code> to separator dla czytelności. Kompilator go pomija.</li>
+        <li><strong>Przyrostek</strong> ustala typ: <code>42u8</code>, <code>1_000_i64</code>.</li>
+        <li>Gdy nic innego nie ustala typu, literał całkowity jest typu <code>i32</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Liczby zmiennoprzecinkowe</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let price = 2.5;
+let ratio: f32 = 0.75;
+println!("{}", 0.1 + 0.2);</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>0.30000000000000004</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><strong><code>f64</code></strong> (podwójna precyzja) to typ domyślny.</li>
+        <li><code>f32</code> (pojedyncza precyzja) zajmuje połowę pamięci i jest mniej dokładny.</li>
+        <li>Wielu ułamków dziesiętnych nie da się zapisać dokładnie, więc wyniki mogą się nieznacznie różnić.</li>
+        <li>Nie używaj liczb zmiennoprzecinkowych do pieniędzy.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Wartości logiczne i znaki</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let is_ready = true;
+let has_errors: bool = false;
+
+let letter = 'R';
+let digit: char = '7';
+let crab = '🦀';</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>bool</code> to <code>true</code> albo <code>false</code>.</li>
+        <li><code>char</code> zapisujemy w <strong>pojedynczych cudzysłowach</strong> (apostrofach).</li>
+        <li><code>char</code> zajmuje 4 bajty i mieści dowolny znak Unicode: litery, cyfry, emoji, znaki chińskie.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Apostrofy a cudzysłowy</h2>
+  <pre class="small"><code class="lang-error">error[E0308]: mismatched types
+ --> src/main.rs:2:24
+  |
+2 |     let letter: char = "a";
+  |                 ----   ^^^ expected `char`, found `&amp;str`
+  |                 |
+  |                 expected due to this
+  |
+help: if you meant to write a `char` literal, use single quotes</code></pre>
+  <ul>
+    <li><code>'a'</code> to pojedynczy znak, typu <code>char</code>.</li>
+    <li><code>"a"</code> to tekst, typu <code>&amp;str</code>. Więcej w części 4.</li>
+  </ul>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 3</div>
+  <h1>Typy w praktyce</h1>
+  <div class="bar"></div>
+</section>
+
+<section class="slide">
+  <h2>Wnioskowanie typów</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let count = 10;
+let average = 2.5;
+let small: u8 = 10;
+let tiny = 10_u8;</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li>Kompilator sam <strong>wnioskuje</strong> typy: <code>count</code> to <code>i32</code>, <code>average</code> to <code>f64</code>.</li>
+        <li>Adnotacja albo przyrostek wybiera inny typ.</li>
+        <li>Rust jest <strong>statycznie typowany</strong>: typ każdej wartości jest znany w czasie kompilacji i nigdy się nie zmienia.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Typy muszą się zgadzać</h2>
+  <pre class="small"><code class="lang-error">error[E0308]: mismatched types
+ --> src/main.rs:2:22
+  |
+2 |     let whole: i32 = 3.5;
+  |                ---   ^^^ expected `i32`, found floating-point number</code></pre>
+  <pre class="small"><code class="lang-error">error[E0277]: cannot add a float to an integer
+ --> src/main.rs:3:19
+  |
+3 |     let total = 5 + 2.5;
+  |                   ^ no implementation for `{integer} + {float}`</code></pre>
+  <ul>
+    <li>Rust nigdy sam nie zamienia typów, nawet liczby całkowitej na zmiennoprzecinkową. Obie strony <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code> muszą mieć ten sam typ.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Arytmetyka</h2>
+  <div class="columns">
+    <div>
+      <table>
+        <tr><th>Wyrażenie</th><th>Wynik</th></tr>
+        <tr><td><code>7 + 2</code></td><td><code>9</code></td></tr>
+        <tr><td><code>7 - 2</code></td><td><code>5</code></td></tr>
+        <tr><td><code>7 * 2</code></td><td><code>14</code></td></tr>
+        <tr><td><code>7 / 2</code></td><td><code>3</code></td></tr>
+        <tr><td><code>-7 / 2</code></td><td><code>-3</code></td></tr>
+        <tr><td><code>7 % 2</code></td><td><code>1</code></td></tr>
+        <tr><td><code>7.0 / 2.0</code></td><td><code>3.5</code></td></tr>
+      </table>
+    </div>
+    <div>
+      <ul>
+        <li>Dzielenie całkowite odrzuca część ułamkową: <strong>obcina w stronę zera</strong>.</li>
+        <li><code>%</code> daje resztę z dzielenia.</li>
+        <li>Żeby dostać <code>3.5</code>, dziel liczby zmiennoprzecinkowe.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Konwersja przez <code>as</code></h2>
+  <div class="columns">
+    <div>
+      <pre><code class="lang-rust">let whole = 7;
+let half = whole as f64 / 2.0;
+let truncated = 3.99_f64 as i32;
+let big: i32 = 300;
+let wrapped = big as u8;
+let letter_code = 'A' as u8;</code></pre>
+      <span class="label">Wartości</span>
+      <pre class="output"><code>half: 3.5
+truncated: 3
+wrapped: 44
+letter_code: 65</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>as</code> jawnie zamienia jeden typ prosty na inny.</li>
+        <li>Zamiana liczby zmiennoprzecinkowej na całkowitą odrzuca część ułamkową.</li>
+        <li>Zamiana na mniejszy typ całkowity zachowuje tylko bity, które się mieszczą: 300 zmienia się w 44.</li>
+        <li><code>as</code> nigdy nie zgłasza błędu, więc może <strong>po cichu</strong> gubić dane.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Przepełnienie</h2>
+  <p><code>u8</code> mieści wartości od 0 do 255. Co się stanie z 256?</p>
+  <table>
+    <tr><th>Sytuacja</th><th>Wynik</th></tr>
+    <tr><td><code>let x: u8 = 256;</code></td><td>Błąd kompilacji: <em>literal out of range for <code>u8</code></em></td></tr>
+    <tr><td><code>let x: u8 = 255 + 1;</code></td><td>Błąd kompilacji: <em>this arithmetic operation will overflow</em></td></tr>
+    <tr><td>Wartość znana dopiero w czasie działania, wersja debug</td><td>Program się zatrzymuje: <em>attempt to add with overflow</em></td></tr>
+    <tr><td>Wartość znana dopiero w czasie działania, wersja release</td><td>Wynik po cichu się zawija: 255 + 1 = 0</td></tr>
+  </table>
+  <p class="note">Takie zatrzymanie programu Rust nazywa <strong>panic</strong> (paniką).</p>
+</section>
+
+<section class="slide">
+  <h2>Przepełnienie w czasie działania</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">fn main() {
+    println!("{}", add_one(255));
+}
+
+fn add_one(value: u8) -> u8 {
+    value + 1
+}</code></pre>
+    </div>
+    <div>
+      <span class="label command">cargo run</span>
+      <pre class="small output"><code>thread 'main' (38736) panicked at src/main.rs:6:5:
+attempt to add with overflow</code></pre>
+      <span class="label command">cargo run --release</span>
+      <pre class="small output"><code>0</code></pre>
+    </div>
+  </div>
+  <ul>
+    <li>Wewnątrz <code>add_one</code> kompilator nie zna wartości, więc nie może zgłosić błędu wcześniej.</li>
+    <li>Funkcje omówimy w części 5.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Wybór zachowania przy przepełnieniu</h2>
+  <table>
+    <tr><th>Metoda</th><th>Przykład</th><th>Wynik</th></tr>
+    <tr><td><code>wrapping_add</code></td><td><code>250_u8.wrapping_add(10)</code></td><td><code>4</code>: zawija się</td></tr>
+    <tr><td><code>saturating_add</code></td><td><code>250_u8.saturating_add(10)</code></td><td><code>255</code>: zatrzymuje się na granicy</td></tr>
+    <tr><td><code>checked_add</code></td><td><code>250_u8.checked_add(10)</code></td><td>Informuje, że nastąpiło przepełnienie</td></tr>
+  </table>
+  <ul class="spaced">
+    <li>Jeśli przepełnienie jest spodziewane, zaznacz to jawnie jedną z tych metod.</li>
+    <li>Każda istnieje też dla odejmowania i mnożenia: <code>wrapping_sub</code>, <code>saturating_mul</code>.</li>
+    <li>Wynik <code>checked_add</code> to <code>Option</code>, omówiony w rozdziale 5.</li>
+  </ul>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 4</div>
+  <h1>Typy złożone</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Grupowanie kilku wartości w jedną</div>
+</section>
+
+<section class="slide">
+  <h2>Krotki</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let person: (&amp;str, i32, f64) = ("Alice", 30, 1.68);
+println!("{}", person.0);
+println!("{}", person.1);
+println!("{:?}", person);</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>Alice
+30
+("Alice", 30, 1.68)</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li>Krotka (tuple) grupuje wartości, które mogą mieć <strong>różne typy</strong>.</li>
+        <li>Jej długość jest stała.</li>
+        <li>Pola odczytujemy po pozycji: <code>.0</code>, <code>.1</code>, <code>.2</code>.</li>
+        <li><code>person.3</code> się nie skompiluje: <em>no field <code>3</code></em>.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">Rozpakowywanie krotki do zmiennych (destrukturyzację) omówimy w rozdziale 5.</p>
+</section>
+
+<section class="slide">
+  <h2>Tablice</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let primes = [2, 3, 5, 7, 11];
+let zeros = [0; 5];
+let first: i32 = primes[0];
+println!("{} {}", first, primes.len());
+println!("{:?}", zeros);</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>2 5
+[0, 0, 0, 0, 0]</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li>Wszystkie elementy mają <strong>ten sam typ</strong>.</li>
+        <li>Długość jest częścią typu: <code>primes</code> to <code>[i32; 5]</code>.</li>
+        <li><code>[0; 5]</code> to pięć zer.</li>
+        <li>Indeksy zaczynają się od <code>0</code> i mają typ <code>usize</code>.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">Wycinki (slices), iterowanie i rozszerzalny <code>Vec</code> omówimy w rozdziale 5.</p>
+</section>
+
+<section class="slide">
+  <h2>Indeks poza zakresem</h2>
+  <span class="label">Indeks znany w czasie kompilacji</span>
+  <pre class="small"><code class="lang-error">error: this operation will panic at runtime
+ --> src/main.rs:3:20
+  |
+3 |     println!("{}", primes[10]);
+  |                    ^^^^^^^^^^ index out of bounds: the length is 5 but the index is 10</code></pre>
+  <span class="label">Indeks znany dopiero w czasie działania</span>
+  <pre class="small output"><code>thread 'main' (10996) panicked at src/main.rs:7:20:
+index out of bounds: the len is 5 but the index is 10</code></pre>
+  <ul>
+    <li>Rust zawsze sprawdza indeksy tablic.</li>
+    <li>Zły indeks zatrzymuje program, zamiast czytać nie swoją pamięć, na co pozwoliłoby C.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Literały napisowe</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let name = "Ferris";
+let greeting: &amp;str = "Hello, world!";
+let initial = 'F';</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li>Tekst w cudzysłowach to <strong>literał napisowy</strong>, typu <code>&amp;str</code>.</li>
+        <li><code>"F"</code> to tekst. <code>'F'</code> to pojedynczy <code>char</code>.</li>
+        <li><code>&amp;</code> oznacza <strong>referencję</strong>, omówioną w rozdziale 3.</li>
+        <li>Tekst, który można budować i zmieniać w czasie działania (<code>String</code>), omówimy w rozdziale 5.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide title-slide">
+  <div class="chapter">Część 5</div>
+  <h1>Funkcje</h1>
+  <div class="bar"></div>
+</section>
+
+<section class="slide">
+  <h2>Definiowanie funkcji</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">fn main() {
+    print_sum(3, 4);
+}
+
+fn print_sum(first: i32, second: i32) {
+    println!("{first} + {second} = {}", first + second);
+}</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>3 + 4 = 7</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>fn</code>, nazwa, parametry w <code>( )</code>, ciało w <code>{ }</code>.</li>
+        <li>Każdy parametr musi mieć typ. Rust nigdy nie wnioskuje typów parametrów.</li>
+        <li>Kolejność definicji w pliku nie ma znaczenia.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Zwracanie wartości</h2>
+  <div class="columns">
+    <div>
+      <span class="label">Ostatnie wyrażenie</span>
+      <pre><code class="lang-rust">fn square(number: i32) -> i32 {
+    number * number
+}</code></pre>
+      <span class="label">Z return</span>
+      <pre><code class="lang-rust">fn square(number: i32) -> i32 {
+    return number * number;
+}</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>-&gt; i32</code> deklaruje typ zwracanej wartości.</li>
+        <li>Ostatnie wyrażenie w ciele, <strong>bez</strong> <code>;</code>, jest zwracaną wartością.</li>
+        <li><code>return</code> też działa. Używa się go głównie do wcześniejszego wyjścia z funkcji (z <code>if</code>, rozdział 4).</li>
+        <li>Obie wersje robią to samo. Pierwsza to zwykły styl, a <code>cargo clippy</code> ostrzega przy drugiej: <em>unneeded <code>return</code> statement</em>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Instrukcje i wyrażenia</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let y = {
+    let x = 3;
+    x + 1
+};
+println!("{y}");</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>4</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><strong>Instrukcja</strong> coś wykonuje i nie ma wartości: <code>let x = 3;</code></li>
+        <li><strong>Wyrażenie</strong> daje wartość: <code>5</code>, <code>x + 1</code>, wywołanie funkcji, blok.</li>
+        <li>Wartością bloku jest jego ostatnie wyrażenie.</li>
+        <li>Dodanie <code>;</code> zamienia wyrażenie w instrukcję.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Typ jednostkowy <code>()</code></h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code class="lang-rust">let nothing = print_sum(3, 4);
+println!("{:?}", nothing);</code></pre>
+      <span class="label">Wynik</span>
+      <pre class="output"><code>3 + 4 = 7
+()</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>()</code> to pusta krotka, nazywana <strong>unit</strong>. Oznacza „brak znaczącej wartości”.</li>
+        <li>Funkcja bez <code>-&gt;</code> zwraca <code>()</code>.</li>
+        <li><code>fn main()</code> też zwraca <code>()</code>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Zbędny średnik</h2>
+  <pre class="small"><code class="lang-error">error[E0308]: mismatched types
+ --> src/main.rs:5:27
+  |
+5 | fn square(number: i32) -> i32 {
+  |    ------                 ^^^ expected `i32`, found `()`
+  |    |
+  |    implicitly returns `()` as its body has no tail or `return` expression
+6 |     number * number;
+  |                    - help: remove this semicolon to return this value</code></pre>
+  <p>Znak <code>;</code> zamienia ostatnie wyrażenie w instrukcję, więc ciało zwraca <code>()</code> zamiast <code>i32</code>.</p>
+</section>
+
+<section class="slide">
+  <h2>Podsumowanie</h2>
+  <ul>
+    <li><code>let</code> tworzy zmienną. Zmienne są domyślnie niezmienne.</li>
+    <li>Typy skalarne: liczby całkowite (domyślnie <code>i32</code>), zmiennoprzecinkowe (domyślnie <code>f64</code>), <code>bool</code>, <code>char</code>.</li>
+    <li>Rust nigdy sam nie zamienia typów. Używaj <code>as</code> i pamiętaj, że może gubić dane.</li>
+    <li>Przepełnienie to błąd kompilacji, panika w wersji debug albo ciche zawinięcie w wersji release. Gdy się go spodziewasz, użyj <code>wrapping_</code>, <code>saturating_</code> albo <code>checked_</code>.</li>
+    <li>Krotki grupują różne typy. Tablice mieszczą stałą liczbę wartości jednego typu.</li>
+    <li>Funkcje deklarują typy parametrów i zwracanej wartości. Ostatnie wyrażenie bez <code>;</code> jest zwracaną wartością.</li>
+  </ul>
+  <p class="note">Dalej: rozdział 3, własność i referencje.</p>
+</section>
+
+</div>
+
+</div>
+</div>
+<script src="assets/deck.js"></script>
+</body>
+</html>

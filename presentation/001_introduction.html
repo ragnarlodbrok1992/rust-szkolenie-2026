@@ -554,7 +554,7 @@ Hello, world!</code></pre>
       <pre><code class="lang-shell">$ cargo add rand</code></pre>
       <span class="label">Cargo.toml now contains</span>
       <pre><code class="lang-toml">[dependencies]
-rand = "0.9"</code></pre>
+rand = "0.10.3"</code></pre>
     </div>
     <div>
       <ul>
@@ -584,12 +584,12 @@ rand = "0.9"</code></pre>
 <section class="slide">
   <h2>Reading compiler errors</h2>
   <pre class="small"><code class="lang-rust">fn main() {
-    printn!("Hello, world!");
+    prinln!("Hello, world!");
 }</code></pre>
-  <pre class="small"><code class="lang-error">error: cannot find macro `printn` in this scope
+  <pre class="small"><code class="lang-error">error: cannot find macro `prinln` in this scope
  --> src/main.rs:2:5
   |
-2 |     printn!("Hello, world!");
+2 |     prinln!("Hello, world!");
   |     ^^^^^^ help: a macro with a similar name exists: `println`</code></pre>
   <ul>
     <li>Read errors from the top. The first one often causes the rest.</li>
@@ -920,7 +920,7 @@ Hello, world!</code></pre>
       <pre><code class="lang-shell">$ cargo add rand</code></pre>
       <span class="label">Cargo.toml zawiera teraz</span>
       <pre><code class="lang-toml">[dependencies]
-rand = "0.9"</code></pre>
+rand = "0.10.3"</code></pre>
     </div>
     <div>
       <ul>
@@ -950,12 +950,12 @@ rand = "0.9"</code></pre>
 <section class="slide">
   <h2>Czytanie błędów kompilatora</h2>
   <pre class="small"><code class="lang-rust">fn main() {
-    printn!("Hello, world!");
+    prinln!("Hello, world!");
 }</code></pre>
-  <pre class="small"><code class="lang-error">error: cannot find macro `printn` in this scope
+  <pre class="small"><code class="lang-error">error: cannot find macro `prinln` in this scope
  --> src/main.rs:2:5
   |
-2 |     printn!("Hello, world!");
+2 |     prinln!("Hello, world!");
   |     ^^^^^^ help: a macro with a similar name exists: `println`</code></pre>
   <ul>
     <li>Czytaj błędy od góry. Pierwszy często powoduje kolejne.</li>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Variables, control flow and macros</title>
+<title>Variables, control flow, and macros</title>
 <link rel="stylesheet" href="assets/deck.css">
 </head>
 <body>
@@ -14,9 +14,9 @@
 
 <section class="slide title-slide">
   <div class="chapter">Chapter 4</div>
-  <h1>Variables, control flow and macros</h1>
+  <h1>Variables, control flow, and macros</h1>
   <div class="bar"></div>
-  <div class="subtitle">Mutability, constants, shadowing, control flow and macros</div>
+  <div class="subtitle">Mutability, constants, shadowing, control flow, and macros</div>
 </section>
 
 <section class="slide">
@@ -186,7 +186,7 @@ if temperature &lt; 10 {
 3 |     if number {
   |        ^^^^^^ expected `bool`, found integer</code></pre>
   <ul>
-    <li>Rust has no "truthy" values. A number, a string or an array is never treated as <code>true</code> or <code>false</code>.</li>
+    <li>Rust has no "truthy" values. A number, a string, or an array is never treated as <code>true</code> or <code>false</code>.</li>
     <li>Write the comparison you mean: <code>if number != 0</code>.</li>
   </ul>
 </section>
@@ -308,7 +308,7 @@ for prime in primes {
       </ul>
     </div>
   </div>
-  <p class="note">Iterators in general, slices and <code>Vec</code> are covered in chapter 5.</p>
+  <p class="note">Iterators in general, slices, and <code>Vec</code> are covered in chapter 5.</p>
 </section>
 
 <section class="slide">
@@ -413,7 +413,7 @@ println!("{message}");</code></pre>
     <tr><td><code>print!</code>, <code>println!</code></td><td>Print to standard output, without and with a newline</td></tr>
     <tr><td><code>eprint!</code>, <code>eprintln!</code></td><td>Print to standard error, for errors and diagnostics</td></tr>
     <tr><td><code>format!</code></td><td>Build a <code>String</code> using the same placeholders</td></tr>
-    <tr><td><code>dbg!</code></td><td>Print an expression, its value, file and line to standard error, then return the value</td></tr>
+    <tr><td><code>dbg!</code></td><td>Print an expression, its value, file, and line to standard error, then return the value</td></tr>
     <tr><td><code>panic!</code>, <code>todo!</code>, <code>unreachable!</code></td><td>Stop the program with a message</td></tr>
     <tr><td><code>assert!</code>, <code>assert_eq!</code></td><td>Panic if a condition doesn't hold. Used in tests (chapter 6).</td></tr>
     <tr><td><code>vec!</code></td><td>Create a <code>Vec</code> (chapter 5)</td></tr>
@@ -466,7 +466,7 @@ println!("{doubled}");</code></pre>
   <h2>Formatting options</h2>
   <table>
     <tr><th>Placeholder</th><th>Meaning</th><th>Example output</th></tr>
-    <tr><td><code>{:&gt;6}</code> <code>{:&lt;6}</code> <code>{:^6}</code></td><td>Right-align, left-align or center in 6 columns</td><td><code>[    ab]</code> <code>[ab    ]</code> <code>[  ab  ]</code></td></tr>
+    <tr><td><code>{:&gt;6}</code> <code>{:&lt;6}</code> <code>{:^6}</code></td><td>Right-align, left-align, or center in 6 columns</td><td><code>[    ab]</code> <code>[ab    ]</code> <code>[  ab  ]</code></td></tr>
     <tr><td><code>{:.2}</code></td><td>Two decimal places, rounded: <code>9.87654</code></td><td><code>9.88</code></td></tr>
     <tr><td><code>{0} {1} {0}</code></td><td>Arguments by position: <code>"a"</code>, <code>"b"</code></td><td><code>a b a</code></td></tr>
     <tr><td><code>{:x}</code> <code>{:b}</code></td><td>Hexadecimal, binary: <code>255</code>, <code>5</code></td><td><code>ff</code> <code>101</code></td></tr>
@@ -536,7 +536,7 @@ println!("{}", sum!());</code></pre>
       <ul class="compact">
         <li>Its signature documents and checks the types.</li>
         <li>Compiler errors are clearer.</li>
-        <li>It's easier to read, test and document.</li>
+        <li>It's easier to read, test, and document.</li>
       </ul>
     </div>
     <div>

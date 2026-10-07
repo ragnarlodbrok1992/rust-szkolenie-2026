@@ -26,7 +26,7 @@
     <li><strong>Scalar types</strong>: integers, floating-point numbers, booleans, characters</li>
     <li><strong>Types in practice</strong>: inference, arithmetic, conversions, overflow</li>
     <li><strong>Compound types</strong>: tuples, arrays, string literals</li>
-    <li><strong>Functions</strong>: parameters, return values, statements and expressions</li>
+    <li><strong>Functions</strong>: parameters, return values, statements, and expressions</li>
   </ol>
   <p class="note">Code for this chapter: <code>002-syntax-data-types/</code></p>
 </section>
@@ -116,7 +116,7 @@ let name = "Ferris";</code></pre>
     <li>Once a variable has a value, it can't be changed.</li>
     <li>That makes code easier to follow: a name always means the same value.</li>
   </ul>
-  <p class="note">Mutable variables (<code>mut</code>), constants and shadowing are covered in chapter 4.</p>
+  <p class="note">Mutable variables (<code>mut</code>), constants, and shadowing are covered in chapter 4.</p>
 </section>
 
 <section class="slide">
@@ -361,6 +361,7 @@ letter_code: 65</code></pre>
         <li>Float to integer drops the fraction.</li>
         <li>Converting to a smaller integer keeps only the bits that fit: 300 becomes 44.</li>
         <li><code>as</code> never fails, so it can lose data <strong>silently</strong>.</li>
+        <li><code>cargo clippy</code> warns about <code>'A' as u8</code>: <em>casting a character literal to <code>u8</code> truncates</em>, since a <code>char</code> has 4 bytes. It suggests the byte literal <code>b'A'</code> (slide 13).</li>
       </ul>
     </div>
   </div>
@@ -631,7 +632,7 @@ println!("{:?}", nothing);</code></pre>
     <li><code>let</code> creates a variable. Variables are immutable by default.</li>
     <li>Scalar types: integers (<code>i32</code> by default), floats (<code>f64</code> by default), <code>bool</code>, <code>char</code>.</li>
     <li>Rust never converts types on its own. Use <code>as</code>, and remember it can lose data.</li>
-    <li>Overflow is a compile error, a panic in debug builds, or a silent wrap in release builds. Use <code>wrapping_</code>, <code>saturating_</code> or <code>checked_</code> when you expect it.</li>
+    <li>Overflow is a compile error, a panic in debug builds, or a silent wrap in release builds. Use <code>wrapping_</code>, <code>saturating_</code>, or <code>checked_</code> when you expect it.</li>
     <li>Tuples group different types. Arrays hold a fixed number of values of one type.</li>
     <li>Functions declare parameter and return types. The last expression without <code>;</code> is the return value.</li>
   </ul>
@@ -988,9 +989,10 @@ letter_code: 65</code></pre>
     <div>
       <ul>
         <li><code>as</code> jawnie zamienia jeden typ prosty na inny.</li>
-        <li>Zamiana liczby zmiennoprzecinkowej na całkowitą odrzuca część ułamkową.</li>
-        <li>Zamiana na mniejszy typ całkowity zachowuje tylko bity, które się mieszczą: 300 zmienia się w 44.</li>
+        <li>Liczba zmiennoprzecinkowa zamieniona na całkowitą traci część ułamkową.</li>
+        <li>Mniejszy typ całkowity zachowuje tylko mieszczące się bity: 300 zmienia się w 44.</li>
         <li><code>as</code> nigdy nie zgłasza błędu, więc może <strong>po cichu</strong> gubić dane.</li>
+        <li><code>cargo clippy</code> ostrzega przy <code>'A' as u8</code>, bo <code>char</code> ma 4 bajty, i podpowiada literał bajtowy <code>b'A'</code> (slajd 13).</li>
       </ul>
     </div>
   </div>

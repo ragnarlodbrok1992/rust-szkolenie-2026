@@ -16,7 +16,7 @@
   <div class="chapter">Chapter 6</div>
   <h1>Advanced concepts and testing</h1>
   <div class="bar"></div>
-  <div class="subtitle">Generics, traits, error handling and effective tests</div>
+  <div class="subtitle">Generics, traits, error handling, and effective tests</div>
 </section>
 
 <section class="slide">
@@ -105,7 +105,7 @@ println!("{} {}", largest(&amp;numbers), largest(&amp;letters));</code></pre>
       <pre class="small output"><code>100 y</code></pre>
       <ul class="compact">
         <li><code>T: PartialOrd</code> is a <strong>trait bound</strong>: any type that can be compared.</li>
-        <li>One function now works for <code>i32</code>, <code>char</code> and any other comparable type.</li>
+        <li>One function now works for <code>i32</code>, <code>char</code>, and any other comparable type.</li>
         <li>No runtime cost: the compiler generates a separate copy for each type you use.</li>
       </ul>
     </div>
@@ -539,7 +539,7 @@ error: 200 is too old</code></pre>
       <ul class="compact">
         <li>it's a bug: a broken assumption, a state that should be impossible</li>
         <li>continuing would be wrong or unsafe</li>
-        <li>you're writing a test, an example or a prototype (<code>unwrap</code>, <code>expect</code>)</li>
+        <li>you're writing a test, an example, or a prototype (<code>unwrap</code>, <code>expect</code>)</li>
       </ul>
     </div>
   </div>
@@ -717,7 +717,7 @@ fn parse_age_rejects_age_over_150() {
     <li>Traits define shared behavior. <code>derive</code> implements standard traits, and <code>dyn</code> mixes types at runtime.</li>
     <li><code>Result</code> represents recoverable errors. <code>?</code> passes them to the caller, and your own enum describes them.</li>
     <li><code>panic!</code> is for bugs. <code>unwrap</code> and <code>expect</code> are for tests and prototypes.</li>
-    <li><code>#[test]</code>, assertions and <code>cargo test</code> check behavior. Good tests are small, well named, and cover the error paths.</li>
+    <li><code>#[test]</code>, assertions, and <code>cargo test</code> check behavior. Good tests are small, well named, and cover the error paths.</li>
   </ul>
 </section>
 

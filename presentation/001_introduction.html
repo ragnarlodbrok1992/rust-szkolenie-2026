@@ -31,11 +31,12 @@
     <li>Adding a dependency</li>
     <li>Reading compiler errors</li>
   </ol>
+  <p class="note">Code for this chapter: <code>001-introduction/</code></p>
 </section>
 
 <section class="slide">
   <h2>What is Rust?</h2>
-  <p>A general-purpose, compiled <strong>systems programming language</strong> focused on safety, speed and concurrency.</p>
+  <p>A general-purpose, compiled <strong>systems programming language</strong> focused on safety, speed, and concurrency.</p>
   <table>
     <tr><th>Year</th><th>Milestone</th></tr>
     <tr><td>2006</td><td>Started by Graydon Hoare as a personal project</td></tr>
@@ -56,7 +57,7 @@
     </div>
     <div>
       <div class="card"><h3>Helpful compiler</h3><p>Error messages explain the problem and often suggest the fix.</p></div>
-      <div class="card"><h3>Great tooling</h3><p>One official tool builds, tests, formats, lints and documents your code.</p></div>
+      <div class="card"><h3>Great tooling</h3><p>One official tool builds, tests, formats, lints, and documents your code.</p></div>
       <div class="card"><h3>Stability</h3><p>Code written for Rust 1.0 still compiles with today's compiler.</p></div>
     </div>
   </div>
@@ -176,7 +177,7 @@ $ cargo --version</code></pre>
       <ul>
         <li><strong>rustfmt</strong>: formats code in the standard style.</li>
         <li><strong>clippy</strong>: a linter that suggests better code.</li>
-        <li><strong>rust-analyzer</strong>: editor support, such as completion, go to definition and inline errors. Works with most editors.</li>
+        <li><strong>rust-analyzer</strong>: editor support, such as completion, go to definition, and inline errors. Works with most editors.</li>
       </ul>
     </div>
   </div>
@@ -292,7 +293,7 @@ $ ./main
 Hello, world!</code></pre>
   <ul>
     <li>Fine for a single file.</li>
-    <li>For real projects, use Cargo. It handles dependencies, build profiles and many files.</li>
+    <li>For real projects, use Cargo. It handles dependencies, build profiles, and many files.</li>
   </ul>
 </section>
 
@@ -345,7 +346,7 @@ rand = "0.10.3"</code></pre>
     <li><code>1..=6</code> is a range from 1 to 6, inclusive.</li>
     <li><code>let</code> creates a variable, and <code>{dice_roll}</code> prints its value.</li>
   </ul>
-  <p class="note">Variables, ranges and formatting are covered properly in chapters 2 and 4.</p>
+  <p class="note">Variables, ranges, and formatting are covered properly in chapters 2 and 4.</p>
 </section>
 
 <section class="slide">
@@ -360,7 +361,7 @@ rand = "0.10.3"</code></pre>
   |     ^^^^^^ help: a macro with a similar name exists: `println`</code></pre>
   <ul>
     <li>Read errors from the top. The first one often causes the rest.</li>
-    <li>The arrow points at the file, line and column.</li>
+    <li>The arrow points at the file, line, and column.</li>
     <li>Look for the <code>help:</code> lines. They often contain the fix.</li>
   </ul>
 </section>
@@ -371,7 +372,7 @@ rand = "0.10.3"</code></pre>
     <li>Rust is a compiled language that is both safe and fast.</li>
     <li><code>rustup</code> manages the toolchain, <code>cargo</code> drives the work, and <code>rustc</code> compiles.</li>
     <li>A Cargo project has a <code>Cargo.toml</code> and its code in <code>src/</code>.</li>
-    <li><code>cargo check</code>, <code>cargo build</code> and <code>cargo run</code> are the everyday commands.</li>
+    <li><code>cargo check</code>, <code>cargo build</code>, and <code>cargo run</code> are the everyday commands.</li>
     <li>Crates from crates.io are added with <code>cargo add</code>.</li>
     <li>The compiler is your teacher. Read its messages.</li>
   </ul>
@@ -401,6 +402,7 @@ rand = "0.10.3"</code></pre>
     <li>Dodawanie zależności</li>
     <li>Czytanie błędów kompilatora</li>
   </ol>
+  <p class="note">Kod do tego rozdziału: <code>001-introduction/</code></p>
 </section>
 
 <section class="slide">

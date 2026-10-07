@@ -129,7 +129,7 @@ println!("{literal} / {owned} / {}", owned.len());</code></pre>
 let second = first;
 println!("{second}");</code></pre>
       <ul class="compact">
-        <li><code>let second = first;</code> copies only the pointer, length and capacity. The text on the heap isn't copied.</li>
+        <li><code>let second = first;</code> copies only the pointer, length, and capacity. The text on the heap isn't copied.</li>
         <li>Ownership <strong>moves</strong> to <code>second</code>, and <code>first</code> can't be used anymore.</li>
         <li>Otherwise both would free the same memory at <code>}</code>.</li>
       </ul>
@@ -365,7 +365,7 @@ hello, world</code></pre>
   |                ----- first borrow later used here</code></pre>
   <ul>
     <li>The <strong>borrow checker</strong> is the part of the compiler that enforces these rules.</li>
-    <li>It guarantees no use after a move, no dangling references and no data races, with no runtime cost.</li>
+    <li>It guarantees no use after a move, no dangling references, and no data races, with no runtime cost.</li>
     <li>Its errors point to both borrows and to the later use. Fix it by finishing one borrow before starting the other.</li>
   </ul>
 </section>
@@ -513,7 +513,7 @@ help: instead, you are more likely to want to return an owned value</code></pre>
     <li>A reference can't outlive its value. Lifetime annotations describe how references relate.</li>
     <li>The borrow checker enforces all of this at compile time.</li>
   </ul>
-  <p class="note">Next: chapter 4, variables, control flow and macros.</p>
+  <p class="note">Next: chapter 4, variables, control flow, and macros.</p>
 </section>
 
 </div>

@@ -16,14 +16,14 @@
   <div class="chapter">Chapter 5</div>
   <h1>Data structures and compound types</h1>
   <div class="bar"></div>
-  <div class="subtitle">Collections, tuples, arrays, slices, structs, enums, iterators and closures</div>
+  <div class="subtitle">Collections, tuples, arrays, slices, structs, enums, iterators, and closures</div>
 </section>
 
 <section class="slide">
   <h2>In this chapter</h2>
   <ol>
-    <li><strong>Tuples, arrays and slices</strong>: destructuring, borrowing part of a collection</li>
-    <li><strong>Collections</strong>: <code>Vec</code>, <code>String</code>, <code>HashMap</code>, iterators and closures</li>
+    <li><strong>Tuples, arrays, and slices</strong>: destructuring, borrowing part of a collection</li>
+    <li><strong>Collections</strong>: <code>Vec</code>, <code>String</code>, <code>HashMap</code>, iterators, and closures</li>
     <li><strong>Structs</strong>: fields, methods, lifetimes in structs</li>
     <li><strong>Enums and <code>Option</code></strong>: variants, <code>match</code>, <code>if let</code></li>
   </ol>
@@ -32,7 +32,7 @@
 
 <section class="slide title-slide">
   <div class="chapter">Part 1</div>
-  <h1>Tuples, arrays and slices</h1>
+  <h1>Tuples, arrays, and slices</h1>
   <div class="bar"></div>
 </section>
 
@@ -144,7 +144,7 @@ println!("{hello} | {world}");</code></pre>
   <div class="chapter">Part 2</div>
   <h1>Collections</h1>
   <div class="bar"></div>
-  <div class="subtitle"><code>Vec</code>, <code>String</code>, <code>HashMap</code>, iterators and closures</div>
+  <div class="subtitle"><code>Vec</code>, <code>String</code>, <code>HashMap</code>, iterators, and closures</div>
 </section>
 
 <section class="slide">
@@ -247,7 +247,7 @@ println!("{scores:?}");</code></pre>
     <div>
       <ul class="compact">
         <li><code>vec![1, 2, 3]</code> has room for exactly 3 elements.</li>
-        <li><code>push(4)</code> allocates a bigger buffer (capacity 6), copies the elements and frees the old one.</li>
+        <li><code>push(4)</code> allocates a bigger buffer (capacity 6), copies the elements, and frees the old one.</li>
         <li><code>first</code> would still point to the freed memory. The borrow checker rejects this at compile time.</li>
       </ul>
     </div>
@@ -746,7 +746,7 @@ bonus: 0  fallback: 'b'</code></pre>
     <tr><th>Type</th><th>Use it for</th><th>Example</th></tr>
     <tr><td>Tuple</td><td>A few values of different types, by position</td><td>Returning <code>(smallest, largest)</code></td></tr>
     <tr><td>Array</td><td>A fixed number of values of one type</td><td><code>[i32; 5]</code></td></tr>
-    <tr><td>Slice</td><td>Borrowing part of an array, <code>Vec</code> or text</td><td>Parameters <code>&amp;[T]</code>, <code>&amp;str</code></td></tr>
+    <tr><td>Slice</td><td>Borrowing part of an array, <code>Vec</code>, or text</td><td>Parameters <code>&amp;[T]</code>, <code>&amp;str</code></td></tr>
     <tr><td><code>Vec</code>, <code>String</code></td><td>Lists and text that grow</td><td>Scores, user input</td></tr>
     <tr><td><code>HashMap</code></td><td>Looking values up by key</td><td>Word counts</td></tr>
     <tr><td>Struct</td><td>Named fields that belong together</td><td>A user</td></tr>
@@ -757,11 +757,11 @@ bonus: 0  fallback: 'b'</code></pre>
 <section class="slide">
   <h2>Summary</h2>
   <ul>
-    <li>Destructuring unpacks tuples. Slices borrow part of an array, a <code>Vec</code> or a string.</li>
-    <li><code>Vec</code>, <code>String</code> and <code>HashMap</code> grow on the heap and follow the borrowing rules.</li>
+    <li>Destructuring unpacks tuples. Slices borrow part of an array, a <code>Vec</code>, or a string.</li>
+    <li><code>Vec</code>, <code>String</code>, and <code>HashMap</code> grow on the heap and follow the borrowing rules.</li>
     <li>A <code>String</code> is UTF-8: <code>.len()</code> counts bytes, and indexing isn't allowed.</li>
     <li>Closures and iterator adapters process collections. Nothing happens until a consumer runs.</li>
-    <li>Structs group named fields. <code>impl</code> adds methods with <code>&amp;self</code>, <code>&amp;mut self</code> or <code>self</code>.</li>
+    <li>Structs group named fields. <code>impl</code> adds methods with <code>&amp;self</code>, <code>&amp;mut self</code>, or <code>self</code>.</li>
     <li>Enums hold one of several variants. <code>Option</code> replaces <code>null</code>, and <code>match</code> must cover every case.</li>
   </ul>
   <p class="note">Next: chapter 6, advanced concepts and testing.</p>

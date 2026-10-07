@@ -1,0 +1,1160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Introduction to Rust</title>
+<style>
+:root {
+  --bg: #f4f1ec;
+  --stage: #fffdf9;
+  --text: #1f1b16;
+  --muted: #6b6259;
+  --accent: #b7410e;
+  --accent-soft: #f6e3d8;
+  --rule: #e2dcd3;
+  --code-bg: #2b2520;
+  --code-text: #f1ebe4;
+  --tok-keyword: #ff9e64;
+  --tok-string: #a6d189;
+  --tok-number: #e5c890;
+  --tok-macro: #8caaee;
+  --tok-type: #e5c890;
+  --tok-prompt: #a39a90;
+  --tok-section: #ff9e64;
+  --tok-key: #8caaee;
+  --tok-error: #ff7a7a;
+  --tok-help: #7fd4c4;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14110f;
+    --stage: #1d1916;
+    --text: #efe9e2;
+    --muted: #a39a90;
+    --accent: #f07a45;
+    --accent-soft: #3a2519;
+    --rule: #3a332d;
+    --code-bg: #0f0d0b;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14110f;
+  --stage: #1d1916;
+  --text: #efe9e2;
+  --muted: #a39a90;
+  --accent: #f07a45;
+  --accent-soft: #3a2519;
+  --rule: #3a332d;
+  --code-bg: #0f0d0b;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  overflow: hidden;
+}
+
+.viewport {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.deck {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  flex: none;
+  transform-origin: center center;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  padding: 56px 72px 64px;
+  background: var(--stage);
+  border-radius: 6px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  font-size: 26px;
+  line-height: 1.45;
+}
+.slide.active { display: flex; }
+
+.slide h1 { font-size: 64px; line-height: 1.1; margin: 0 0 16px; letter-spacing: -0.02em; }
+.slide h2 {
+  font-size: 40px;
+  margin: 0 0 28px;
+  padding-bottom: 14px;
+  border-bottom: 3px solid var(--accent);
+  letter-spacing: -0.01em;
+}
+.slide h3 { font-size: 26px; margin: 0 0 8px; color: var(--accent); }
+.slide p { margin: 0 0 16px; }
+.slide ul, .slide ol { margin: 0 0 16px; padding-left: 1.2em; }
+.slide li { margin-bottom: 10px; }
+.slide li::marker { color: var(--accent); }
+.slide strong { color: var(--accent); }
+.slide a { color: var(--accent); }
+
+.slide code {
+  font-family: "Cascadia Code", "JetBrains Mono", Consolas, "Courier New", monospace;
+  font-size: 0.88em;
+  font-variant-ligatures: none;
+  white-space: nowrap;
+  background: var(--accent-soft);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.slide pre {
+  margin: 0 0 18px;
+  padding: 18px 22px;
+  background: var(--code-bg);
+  color: var(--code-text);
+  border-radius: 6px;
+  font-size: 22px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+.slide pre code { background: none; padding: 0; font-size: 1em; color: inherit; white-space: pre; }
+.slide pre.small { font-size: 19px; }
+
+.label {
+  display: inline-block;
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.tok-keyword { color: var(--tok-keyword); }
+.tok-string { color: var(--tok-string); }
+.tok-number { color: var(--tok-number); }
+.tok-macro { color: var(--tok-macro); }
+.tok-type { color: var(--tok-type); }
+.tok-prompt { color: var(--tok-prompt); user-select: none; }
+.tok-section { color: var(--tok-section); }
+.tok-key { color: var(--tok-key); }
+.tok-error { color: var(--tok-error); font-weight: 600; }
+.tok-help { color: var(--tok-help); }
+
+.columns { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.columns-wide-left { grid-template-columns: 1.3fr 1fr; }
+
+.card {
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--accent);
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin-bottom: 14px;
+}
+.card p { margin: 0; font-size: 22px; color: var(--muted); }
+
+.note {
+  margin-top: auto;
+  font-size: 20px;
+  color: var(--muted);
+  border-top: 1px solid var(--rule);
+  padding-top: 12px;
+}
+
+table { border-collapse: collapse; width: 100%; font-size: 22px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { color: var(--muted); font-size: 16px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.title-slide { justify-content: center; }
+.title-slide .chapter {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 18px;
+}
+.title-slide .subtitle { font-size: 30px; color: var(--muted); }
+.title-slide .bar { width: 120px; height: 6px; background: var(--accent); margin: 28px 0; border-radius: 3px; }
+
+.flow { display: flex; align-items: stretch; gap: 18px; margin: 10px 0 28px; }
+.flow .step {
+  flex: 1;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  padding: 16px 18px;
+  text-align: center;
+}
+.flow .step b { display: block; font-size: 28px; color: var(--accent); margin-bottom: 4px; font-family: "Cascadia Code", Consolas, monospace; }
+.flow .step span { font-size: 20px; color: var(--muted); }
+.flow .arrow { align-self: center; font-size: 30px; color: var(--muted); }
+
+.footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: var(--rule);
+}
+.footer .progress { height: 100%; width: 0; background: var(--accent); transition: width 0.2s ease; }
+.counter {
+  position: fixed;
+  right: 16px;
+  bottom: 12px;
+  font-size: 14px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.slides:not(.current) { display: none; }
+.lang-switch {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  display: flex;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--stage);
+  z-index: 10;
+}
+.lang-switch button {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.lang-switch button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.hint-text:not(.current) { display: none; }
+.help-hint {
+  position: fixed;
+  left: 16px;
+  bottom: 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+</style>
+</head>
+<body>
+<div class="viewport">
+<div class="deck" id="deck">
+<div class="slides" data-lang="en">
+
+<section class="slide title-slide">
+  <div class="chapter">Chapter 1</div>
+  <h1>Introduction to Rust</h1>
+  <div class="bar"></div>
+  <div class="subtitle">The ecosystem and your first application</div>
+</section>
+
+<section class="slide">
+  <h2>In this chapter</h2>
+  <ol>
+    <li>What Rust is and why people use it</li>
+    <li>The toolchain: <code>rustup</code>, <code>rustc</code>, <code>cargo</code></li>
+    <li>Release channels and editions</li>
+    <li>The ecosystem: crates, documentation, tools</li>
+    <li>Your first application: <code>001-introduction/</code></li>
+    <li>The Cargo workflow: build, run, check</li>
+    <li>Adding a dependency</li>
+    <li>Reading compiler errors</li>
+  </ol>
+</section>
+
+<section class="slide">
+  <h2>What is Rust?</h2>
+  <p>A general-purpose, compiled <strong>systems programming language</strong> focused on safety, speed and concurrency.</p>
+  <table>
+    <tr><th>Year</th><th>Milestone</th></tr>
+    <tr><td>2006</td><td>Started by Graydon Hoare as a personal project</td></tr>
+    <tr><td>2009</td><td>Mozilla starts sponsoring the language</td></tr>
+    <tr><td>2015</td><td>Rust 1.0: the stability promise begins</td></tr>
+    <tr><td>2021</td><td>The Rust Foundation takes over stewardship</td></tr>
+    <tr><td>2025</td><td>Rust 2024 edition released</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2>Why Rust?</h2>
+  <div class="columns">
+    <div>
+      <div class="card"><h3>Memory safety without a garbage collector</h3><p>The compiler checks how memory is used before the program runs. Details in chapter 3.</p></div>
+      <div class="card"><h3>Performance</h3><p>Compiles to native machine code. Speed comparable to C and C++.</p></div>
+      <div class="card"><h3>Fearless concurrency</h3><p>Data races are caught at compile time.</p></div>
+    </div>
+    <div>
+      <div class="card"><h3>Helpful compiler</h3><p>Error messages explain the problem and often suggest the fix.</p></div>
+      <div class="card"><h3>Great tooling</h3><p>One official tool builds, tests, formats, lints and documents your code.</p></div>
+      <div class="card"><h3>Stability</h3><p>Code written for Rust 1.0 still compiles with today's compiler.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Where is Rust used?</h2>
+  <div class="columns">
+    <div>
+      <h3>Operating systems</h3>
+      <ul>
+        <li>Linux kernel drivers</li>
+        <li>Windows kernel components</li>
+        <li>Android system services</li>
+      </ul>
+      <h3>Infrastructure</h3>
+      <ul>
+        <li>AWS Firecracker (serverless VMs)</li>
+        <li>Cloudflare network proxies</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Applications</h3>
+      <ul>
+        <li>Firefox rendering engine parts</li>
+        <li>Discord backend services</li>
+      </ul>
+      <h3>Command-line tools</h3>
+      <ul>
+        <li><code>ripgrep</code>, <code>fd</code>, <code>bat</code></li>
+        <li>WebAssembly in the browser</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>The toolchain</h2>
+  <div class="flow">
+    <div class="step"><b>rustup</b><span>installs and updates Rust versions</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>cargo</b><span>build tool and package manager</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>rustc</b><span>the compiler</span></div>
+  </div>
+  <ul>
+    <li><strong>rustup</strong> installs the toolchain and keeps it up to date.</li>
+    <li><strong>cargo</strong> is what you use every day. It calls <code>rustc</code> for you.</li>
+    <li><strong>rustc</strong> turns <code>.rs</code> source files into an executable.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Installing Rust</h2>
+  <div class="columns">
+    <div>
+      <span class="label">Windows</span>
+      <p>Download and run <code>rustup-init.exe</code> from <a href="https://rustup.rs">rustup.rs</a>.</p>
+      <p style="font-size:22px;color:var(--muted)">It needs the Visual Studio C++ Build Tools. The installer offers to set them up.</p>
+      <span class="label">Linux and macOS</span>
+      <pre class="small"><code class="lang-shell">$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh</code></pre>
+    </div>
+    <div>
+      <span class="label">Check the installation</span>
+      <pre><code class="lang-shell">$ rustup --version
+$ rustc --version
+$ cargo --version</code></pre>
+      <span class="label">Update later</span>
+      <pre><code class="lang-shell">$ rustup update</code></pre>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Release channels and editions</h2>
+  <div class="columns">
+    <div>
+      <h3>Channels</h3>
+      <ul>
+        <li><strong>stable</strong>: a new release every 6 weeks. We use this one.</li>
+        <li><strong>beta</strong>: the next stable release, for testing.</li>
+        <li><strong>nightly</strong>: built every day, with experimental features.</li>
+      </ul>
+      <pre class="small"><code class="lang-shell">$ rustup toolchain list</code></pre>
+    </div>
+    <div>
+      <h3>Editions</h3>
+      <p>An edition is a set of language changes that you opt into per project.</p>
+      <p><code>2015</code> · <code>2018</code> · <code>2021</code> · <code>2024</code></p>
+      <p style="font-size:22px;color:var(--muted)">Projects on different editions can still use each other as dependencies.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>The ecosystem</h2>
+  <div class="columns">
+    <div>
+      <h3>Packages and docs</h3>
+      <ul>
+        <li><strong>crates.io</strong>: the package registry. A package is called a <em>crate</em>.</li>
+        <li><strong>docs.rs</strong>: documentation for every published crate.</li>
+        <li><code>rustup doc</code>: the standard library docs, offline.</li>
+      </ul>
+      <h3>Learning</h3>
+      <ul>
+        <li><em>The Rust Programming Language</em> ("the Book")</li>
+        <li><em>Rust by Example</em>, <em>Rustlings</em></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Tools</h3>
+      <ul>
+        <li><strong>rustfmt</strong>: formats code in the standard style.</li>
+        <li><strong>clippy</strong>: a linter that suggests better code.</li>
+        <li><strong>rust-analyzer</strong>: editor support, such as completion, go to definition and inline errors. Works with most editors.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Creating a project</h2>
+  <div class="columns">
+    <div>
+      <span class="label">New directory</span>
+      <pre><code class="lang-shell">$ cargo new hello</code></pre>
+      <span class="label">Existing directory</span>
+      <pre><code class="lang-shell">$ cargo init</code></pre>
+      <p style="font-size:22px;color:var(--muted)">By default both also create a Git repository and a <code>.gitignore</code>.</p>
+    </div>
+    <div>
+      <span class="label">What we ran for this chapter</span>
+      <pre class="small"><code class="lang-shell">$ cargo init --vcs none \
+    --name introduction \
+    001-introduction</code></pre>
+      <ul style="font-size:22px">
+        <li><code>--vcs none</code>: the course repository already uses Git.</li>
+        <li><code>--name</code>: a package name can't start with a digit.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Project layout</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code>001-introduction/
+├── Cargo.toml
+├── Cargo.lock
+├── src/
+│   └── main.rs
+└── target/</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>Cargo.toml</code>: the project manifest. You edit it.</li>
+        <li><code>Cargo.lock</code>: exact dependency versions. Cargo writes it.</li>
+        <li><code>src/main.rs</code>: the entry point of a program.</li>
+        <li><code>target/</code>: build output. Never commit it.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Cargo.toml</h2>
+  <pre><code class="lang-toml">[package]
+name = "introduction"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]</code></pre>
+  <ul>
+    <li><code>[package]</code>: information about this crate.</li>
+    <li><code>name</code>: the crate name, also used for the executable.</li>
+    <li><code>edition</code>: which Rust edition the code is written in.</li>
+    <li><code>[dependencies]</code>: crates this project uses. Empty for now.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>src/main.rs</h2>
+  <pre><code class="lang-rust">fn main() {
+    println!("Hello, world!");
+}</code></pre>
+  <ul>
+    <li><code>fn main()</code>: every program starts running here.</li>
+    <li>The function body sits between <code>{</code> and <code>}</code>.</li>
+    <li><code>println!</code> prints a line. The <code>!</code> means it's a <strong>macro</strong>, not a function. Macros come in chapter 4.</li>
+    <li><code>"Hello, world!"</code> is a string literal.</li>
+    <li>The statement ends with <code>;</code>.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>The Cargo workflow</h2>
+  <table>
+    <tr><th>Command</th><th>What it does</th></tr>
+    <tr><td><code>cargo check</code></td><td>Checks that the code compiles without producing an executable. The fastest feedback.</td></tr>
+    <tr><td><code>cargo build</code></td><td>Compiles a debug build into <code>target/debug/</code>.</td></tr>
+    <tr><td><code>cargo run</code></td><td>Builds if needed, then runs the program.</td></tr>
+    <tr><td><code>cargo build --release</code></td><td>Optimized build into <code>target/release/</code>. Slower to compile, faster to run.</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2>Running the program</h2>
+  <pre class="small"><code class="lang-shell">$ cargo run
+   Compiling introduction v0.1.0 (...\001-introduction)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.82s
+     Running `target\debug\introduction.exe`
+Hello, world!</code></pre>
+  <ul>
+    <li><code>Compiling</code>: Cargo calls <code>rustc</code> on the crate.</li>
+    <li><code>dev</code> profile: a debug build. Unoptimized, but quick to compile.</li>
+    <li><code>Running</code>: the path to the executable Cargo built.</li>
+    <li>The last line is the output of our program.</li>
+    <li>Run it again without changes and Cargo skips the compile step.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Behind the scenes: rustc</h2>
+  <p>Cargo calls the compiler for you. You can also call it directly:</p>
+  <pre><code class="lang-shell">$ rustc src/main.rs
+$ ./main
+Hello, world!</code></pre>
+  <ul>
+    <li>Fine for a single file.</li>
+    <li>For real projects, use Cargo. It handles dependencies, build profiles and many files.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Formatting and linting</h2>
+  <div class="columns">
+    <div>
+      <span class="label">Format the code</span>
+      <pre><code class="lang-shell">$ cargo fmt</code></pre>
+      <p>Rewrites files in the official style. No more style debates.</p>
+    </div>
+    <div>
+      <span class="label">Lint the code</span>
+      <pre><code class="lang-shell">$ cargo clippy</code></pre>
+      <p>Hundreds of checks for common mistakes and non-idiomatic code.</p>
+    </div>
+  </div>
+  <p class="note">Both come with the default <code>rustup</code> installation.</p>
+</section>
+
+<section class="slide">
+  <h2>Adding a dependency</h2>
+  <div class="columns">
+    <div>
+      <span class="label">Add the crate</span>
+      <pre><code class="lang-shell">$ cargo add rand</code></pre>
+      <span class="label">Cargo.toml now contains</span>
+      <pre><code class="lang-toml">[dependencies]
+rand = "0.9"</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>cargo add</code> finds the newest version on crates.io and writes it into <code>Cargo.toml</code>.</li>
+        <li>The next build downloads and compiles the crate.</li>
+        <li><code>Cargo.lock</code> records the exact version used.</li>
+        <li>The version you get may be newer than the one shown here.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Using the dependency</h2>
+  <pre><code class="lang-rust">fn main() {
+    let dice_roll = rand::random_range(1..=6);
+    println!("You rolled: {dice_roll}");
+}</code></pre>
+  <ul>
+    <li><code>rand::random_range</code>: the function <code>random_range</code> from the <code>rand</code> crate.</li>
+    <li><code>1..=6</code> is a range from 1 to 6, inclusive.</li>
+    <li><code>let</code> creates a variable, and <code>{dice_roll}</code> prints its value.</li>
+  </ul>
+  <p class="note">Variables, ranges and formatting are covered properly in chapters 2 and 4.</p>
+</section>
+
+<section class="slide">
+  <h2>Reading compiler errors</h2>
+  <pre class="small"><code class="lang-rust">fn main() {
+    printn!("Hello, world!");
+}</code></pre>
+  <pre class="small"><code class="lang-error">error: cannot find macro `printn` in this scope
+ --> src/main.rs:2:5
+  |
+2 |     printn!("Hello, world!");
+  |     ^^^^^^ help: a macro with a similar name exists: `println`</code></pre>
+  <ul>
+    <li>Read errors from the top. The first one often causes the rest.</li>
+    <li>The arrow points at the file, line and column.</li>
+    <li>Look for the <code>help:</code> lines. They often contain the fix.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Summary</h2>
+  <ul>
+    <li>Rust is a compiled language that is both safe and fast.</li>
+    <li><code>rustup</code> manages the toolchain, <code>cargo</code> drives the work, and <code>rustc</code> compiles.</li>
+    <li>A Cargo project has a <code>Cargo.toml</code> and its code in <code>src/</code>.</li>
+    <li><code>cargo check</code>, <code>cargo build</code> and <code>cargo run</code> are the everyday commands.</li>
+    <li>Crates from crates.io are added with <code>cargo add</code>.</li>
+    <li>The compiler is your teacher. Read its messages.</li>
+  </ul>
+  <p class="note">Next: chapter 2, syntax basics and data types.</p>
+</section>
+
+</div>
+
+<div class="slides" data-lang="pl">
+
+<section class="slide title-slide">
+  <div class="chapter">Rozdział 1</div>
+  <h1>Wprowadzenie do Rusta</h1>
+  <div class="bar"></div>
+  <div class="subtitle">Ekosystem i pierwsza aplikacja</div>
+</section>
+
+<section class="slide">
+  <h2>W tym rozdziale</h2>
+  <ol>
+    <li>Czym jest Rust i dlaczego się go używa</li>
+    <li>Narzędzia: <code>rustup</code>, <code>rustc</code>, <code>cargo</code></li>
+    <li>Kanały wydań i edycje</li>
+    <li>Ekosystem: crates, dokumentacja, narzędzia</li>
+    <li>Pierwsza aplikacja: <code>001-introduction/</code></li>
+    <li>Praca z Cargo: budowanie, uruchamianie, sprawdzanie</li>
+    <li>Dodawanie zależności</li>
+    <li>Czytanie błędów kompilatora</li>
+  </ol>
+</section>
+
+<section class="slide">
+  <h2>Czym jest Rust?</h2>
+  <p>Kompilowany <strong>język programowania systemowego</strong> ogólnego przeznaczenia, nastawiony na bezpieczeństwo, szybkość i współbieżność.</p>
+  <table>
+    <tr><th>Rok</th><th>Wydarzenie</th></tr>
+    <tr><td>2006</td><td>Graydon Hoare zaczyna Rusta jako prywatny projekt</td></tr>
+    <tr><td>2009</td><td>Mozilla zaczyna sponsorować język</td></tr>
+    <tr><td>2015</td><td>Rust 1.0: początek gwarancji stabilności</td></tr>
+    <tr><td>2021</td><td>Opiekę nad językiem przejmuje Rust Foundation</td></tr>
+    <tr><td>2025</td><td>Wydanie edycji Rust 2024</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2>Dlaczego Rust?</h2>
+  <div class="columns">
+    <div>
+      <div class="card"><h3>Bezpieczeństwo pamięci bez garbage collectora</h3><p>Kompilator sprawdza użycie pamięci, zanim program zostanie uruchomiony. Szczegóły w rozdziale 3.</p></div>
+      <div class="card"><h3>Wydajność</h3><p>Kompilacja do natywnego kodu maszynowego. Szybkość porównywalna z C i C++.</p></div>
+      <div class="card"><h3>Współbieżność bez obaw</h3><p>Wyścigi danych są wykrywane podczas kompilacji.</p></div>
+    </div>
+    <div>
+      <div class="card"><h3>Pomocny kompilator</h3><p>Komunikaty błędów wyjaśniają problem i często podpowiadają poprawkę.</p></div>
+      <div class="card"><h3>Świetne narzędzia</h3><p>Jedno oficjalne narzędzie buduje, testuje, formatuje, analizuje i dokumentuje kod.</p></div>
+      <div class="card"><h3>Stabilność</h3><p>Kod napisany dla Rusta 1.0 nadal kompiluje się dzisiejszym kompilatorem.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Gdzie używa się Rusta?</h2>
+  <div class="columns">
+    <div>
+      <h3>Systemy operacyjne</h3>
+      <ul>
+        <li>Sterowniki w jądrze Linuksa</li>
+        <li>Komponenty jądra Windows</li>
+        <li>Usługi systemowe Androida</li>
+      </ul>
+      <h3>Infrastruktura</h3>
+      <ul>
+        <li>AWS Firecracker (maszyny wirtualne dla serverless)</li>
+        <li>Serwery proxy w sieci Cloudflare</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Aplikacje</h3>
+      <ul>
+        <li>Części silnika renderującego Firefoksa</li>
+        <li>Usługi backendowe Discorda</li>
+      </ul>
+      <h3>Narzędzia wiersza poleceń</h3>
+      <ul>
+        <li><code>ripgrep</code>, <code>fd</code>, <code>bat</code></li>
+        <li>WebAssembly w przeglądarce</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Narzędzia</h2>
+  <div class="flow">
+    <div class="step"><b>rustup</b><span>instaluje i aktualizuje wersje Rusta</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>cargo</b><span>narzędzie do budowania i menedżer pakietów</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>rustc</b><span>kompilator</span></div>
+  </div>
+  <ul>
+    <li><strong>rustup</strong> instaluje narzędzia i dba o ich aktualność.</li>
+    <li><strong>cargo</strong> to narzędzie do codziennej pracy. Wywołuje za nas <code>rustc</code>.</li>
+    <li><strong>rustc</strong> zamienia pliki źródłowe <code>.rs</code> w plik wykonywalny.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Instalacja Rusta</h2>
+  <div class="columns">
+    <div>
+      <span class="label">Windows</span>
+      <p>Pobierz i uruchom <code>rustup-init.exe</code> ze strony <a href="https://rustup.rs">rustup.rs</a>.</p>
+      <p style="font-size:22px;color:var(--muted)">Wymaga Visual Studio C++ Build Tools. Instalator proponuje ich instalację.</p>
+      <span class="label">Linux i macOS</span>
+      <pre class="small"><code class="lang-shell">$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh</code></pre>
+    </div>
+    <div>
+      <span class="label">Sprawdzenie instalacji</span>
+      <pre><code class="lang-shell">$ rustup --version
+$ rustc --version
+$ cargo --version</code></pre>
+      <span class="label">Późniejsza aktualizacja</span>
+      <pre><code class="lang-shell">$ rustup update</code></pre>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Kanały wydań i edycje</h2>
+  <div class="columns">
+    <div>
+      <h3>Kanały</h3>
+      <ul>
+        <li><strong>stable</strong>: nowe wydanie co 6 tygodni. Tego używamy.</li>
+        <li><strong>beta</strong>: następne wydanie stable, do testowania.</li>
+        <li><strong>nightly</strong>: budowane codziennie, z funkcjami eksperymentalnymi.</li>
+      </ul>
+      <pre class="small"><code class="lang-shell">$ rustup toolchain list</code></pre>
+    </div>
+    <div>
+      <h3>Edycje</h3>
+      <p>Edycja to zestaw zmian w języku, które włącza się osobno dla każdego projektu.</p>
+      <p><code>2015</code> · <code>2018</code> · <code>2021</code> · <code>2024</code></p>
+      <p style="font-size:22px;color:var(--muted)">Projekty w różnych edycjach mogą nadal korzystać z siebie nawzajem jako zależności.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Ekosystem</h2>
+  <div class="columns">
+    <div>
+      <h3>Pakiety i dokumentacja</h3>
+      <ul>
+        <li><strong>crates.io</strong>: rejestr pakietów. Pakiet w Rust nazywa się <em>crate</em>.</li>
+        <li><strong>docs.rs</strong>: dokumentacja każdego opublikowanego crate'a.</li>
+        <li><code>rustup doc</code>: dokumentacja biblioteki standardowej, offline.</li>
+      </ul>
+      <h3>Nauka</h3>
+      <ul>
+        <li><em>The Rust Programming Language</em> („the Book”)</li>
+        <li><em>Rust by Example</em>, <em>Rustlings</em></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Narzędzia</h3>
+      <ul>
+        <li><strong>rustfmt</strong>: formatuje kod w standardowym stylu.</li>
+        <li><strong>clippy</strong>: linter, który podpowiada lepszy kod.</li>
+        <li><strong>rust-analyzer</strong>: wsparcie w edytorze, np. podpowiadanie, przejście do definicji i błędy w kodzie na bieżąco. Działa z większością edytorów.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Tworzenie projektu</h2>
+  <div class="columns">
+    <div>
+      <span class="label">Nowy katalog</span>
+      <pre><code class="lang-shell">$ cargo new hello</code></pre>
+      <span class="label">Istniejący katalog</span>
+      <pre><code class="lang-shell">$ cargo init</code></pre>
+      <p style="font-size:22px;color:var(--muted)">Domyślnie oba polecenia tworzą też repozytorium Git i plik <code>.gitignore</code>.</p>
+    </div>
+    <div>
+      <span class="label">Co uruchomiliśmy w tym rozdziale</span>
+      <pre class="small"><code class="lang-shell">$ cargo init --vcs none \
+    --name introduction \
+    001-introduction</code></pre>
+      <ul style="font-size:22px">
+        <li><code>--vcs none</code>: repozytorium kursu już używa Gita.</li>
+        <li><code>--name</code>: nazwa pakietu nie może zaczynać się od cyfry.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Struktura projektu</h2>
+  <div class="columns columns-wide-left">
+    <div>
+      <pre><code>001-introduction/
+├── Cargo.toml
+├── Cargo.lock
+├── src/
+│   └── main.rs
+└── target/</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>Cargo.toml</code>: manifest projektu. Edytujesz go sam.</li>
+        <li><code>Cargo.lock</code>: dokładne wersje zależności. Zapisuje go Cargo.</li>
+        <li><code>src/main.rs</code>: punkt wejścia programu.</li>
+        <li><code>target/</code>: wyniki budowania. Nigdy go nie commituj.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Cargo.toml</h2>
+  <pre><code class="lang-toml">[package]
+name = "introduction"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]</code></pre>
+  <ul>
+    <li><code>[package]</code>: informacje o tym crate'cie.</li>
+    <li><code>name</code>: nazwa crate'a, używana też jako nazwa pliku wykonywalnego.</li>
+    <li><code>edition</code>: edycja Rusta, w której napisano kod.</li>
+    <li><code>[dependencies]</code>: crate'y, których używa projekt. Na razie pusto.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>src/main.rs</h2>
+  <pre><code class="lang-rust">fn main() {
+    println!("Hello, world!");
+}</code></pre>
+  <ul>
+    <li><code>fn main()</code>: tu zaczyna się wykonanie każdego programu.</li>
+    <li>Ciało funkcji znajduje się między <code>{</code> a <code>}</code>.</li>
+    <li><code>println!</code> wypisuje linię tekstu. <code>!</code> oznacza, że to <strong>makro</strong>, a nie funkcja. Makra omówimy w rozdziale 4.</li>
+    <li><code>"Hello, world!"</code> to literał napisowy.</li>
+    <li>Instrukcja kończy się znakiem <code>;</code>.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Praca z Cargo</h2>
+  <table>
+    <tr><th>Polecenie</th><th>Co robi</th></tr>
+    <tr><td><code>cargo check</code></td><td>Sprawdza, czy kod się kompiluje, bez tworzenia pliku wykonywalnego. Najszybsza informacja zwrotna.</td></tr>
+    <tr><td><code>cargo build</code></td><td>Kompiluje wersję debug do <code>target/debug/</code>.</td></tr>
+    <tr><td><code>cargo run</code></td><td>Buduje, jeśli trzeba, a potem uruchamia program.</td></tr>
+    <tr><td><code>cargo build --release</code></td><td>Zoptymalizowana wersja w <code>target/release/</code>. Wolniej się kompiluje, szybciej działa.</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2>Uruchamianie programu</h2>
+  <pre class="small"><code class="lang-shell">$ cargo run
+   Compiling introduction v0.1.0 (...\001-introduction)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.82s
+     Running `target\debug\introduction.exe`
+Hello, world!</code></pre>
+  <ul>
+    <li><code>Compiling</code>: Cargo wywołuje <code>rustc</code> dla crate'a.</li>
+    <li>Profil <code>dev</code>: wersja debug. Niezoptymalizowana, ale szybko się kompiluje.</li>
+    <li><code>Running</code>: ścieżka do pliku wykonywalnego zbudowanego przez Cargo.</li>
+    <li>Ostatnia linia to wynik działania naszego programu.</li>
+    <li>Po ponownym uruchomieniu bez zmian Cargo pomija kompilację.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Za kulisami: rustc</h2>
+  <p>Cargo wywołuje kompilator za nas. Można go też uruchomić bezpośrednio:</p>
+  <pre><code class="lang-shell">$ rustc src/main.rs
+$ ./main
+Hello, world!</code></pre>
+  <ul>
+    <li>Wystarcza dla pojedynczego pliku.</li>
+    <li>W prawdziwych projektach używaj Cargo. Zajmuje się zależnościami, profilami budowania i wieloma plikami.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Formatowanie i lintowanie</h2>
+  <div class="columns">
+    <div>
+      <span class="label">Formatowanie kodu</span>
+      <pre><code class="lang-shell">$ cargo fmt</code></pre>
+      <p>Przepisuje pliki w oficjalnym stylu. Koniec sporów o styl.</p>
+    </div>
+    <div>
+      <span class="label">Lintowanie kodu</span>
+      <pre><code class="lang-shell">$ cargo clippy</code></pre>
+      <p>Setki reguł wykrywających typowe błędy i nieidiomatyczny kod.</p>
+    </div>
+  </div>
+  <p class="note">Oba narzędzia są częścią domyślnej instalacji <code>rustup</code>.</p>
+</section>
+
+<section class="slide">
+  <h2>Dodawanie zależności</h2>
+  <div class="columns">
+    <div>
+      <span class="label">Dodanie crate'a</span>
+      <pre><code class="lang-shell">$ cargo add rand</code></pre>
+      <span class="label">Cargo.toml zawiera teraz</span>
+      <pre><code class="lang-toml">[dependencies]
+rand = "0.9"</code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><code>cargo add</code> znajduje najnowszą wersję na crates.io i zapisuje ją w <code>Cargo.toml</code>.</li>
+        <li>Przy następnym budowaniu crate zostanie pobrany i skompilowany.</li>
+        <li><code>Cargo.lock</code> zapisuje dokładną użytą wersję.</li>
+        <li>Pobrana wersja może być nowsza niż ta pokazana tutaj.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Użycie zależności</h2>
+  <pre><code class="lang-rust">fn main() {
+    let dice_roll = rand::random_range(1..=6);
+    println!("You rolled: {dice_roll}");
+}</code></pre>
+  <ul>
+    <li><code>rand::random_range</code>: funkcja <code>random_range</code> z crate'a <code>rand</code>.</li>
+    <li><code>1..=6</code> to zakres od 1 do 6 włącznie.</li>
+    <li><code>let</code> tworzy zmienną, a <code>{dice_roll}</code> wypisuje jej wartość.</li>
+  </ul>
+  <p class="note">Zmienne, zakresy i formatowanie omówimy dokładnie w rozdziałach 2 i 4.</p>
+</section>
+
+<section class="slide">
+  <h2>Czytanie błędów kompilatora</h2>
+  <pre class="small"><code class="lang-rust">fn main() {
+    printn!("Hello, world!");
+}</code></pre>
+  <pre class="small"><code class="lang-error">error: cannot find macro `printn` in this scope
+ --> src/main.rs:2:5
+  |
+2 |     printn!("Hello, world!");
+  |     ^^^^^^ help: a macro with a similar name exists: `println`</code></pre>
+  <ul>
+    <li>Czytaj błędy od góry. Pierwszy często powoduje kolejne.</li>
+    <li>Strzałka wskazuje plik, wiersz i kolumnę.</li>
+    <li>Szukaj linii <code>help:</code>. Często zawierają gotową poprawkę.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Podsumowanie</h2>
+  <ul>
+    <li>Rust to język kompilowany, który jest jednocześnie bezpieczny i szybki.</li>
+    <li><code>rustup</code> zarządza narzędziami, <code>cargo</code> prowadzi pracę, a <code>rustc</code> kompiluje.</li>
+    <li>Projekt Cargo ma plik <code>Cargo.toml</code>, a kod w katalogu <code>src/</code>.</li>
+    <li><code>cargo check</code>, <code>cargo build</code> i <code>cargo run</code> to polecenia na co dzień.</li>
+    <li>Crate'y z crates.io dodaje się poleceniem <code>cargo add</code>.</li>
+    <li>Kompilator jest twoim nauczycielem. Czytaj jego komunikaty.</li>
+  </ul>
+  <p class="note">Dalej: rozdział 2, podstawy składni i typy danych.</p>
+</section>
+
+</div>
+
+</div>
+</div>
+
+<div class="footer"><div class="progress" id="progress"></div></div>
+<div class="lang-switch" role="group" aria-label="Language">
+  <button type="button" data-lang="en" aria-pressed="false">EN</button>
+  <button type="button" data-lang="pl" aria-pressed="false">PL</button>
+</div>
+<div class="help-hint">
+  <span class="hint-text" data-lang="en">← → to navigate · F for fullscreen · T for theme · L for language</span>
+  <span class="hint-text" data-lang="pl">← → nawigacja · F pełny ekran · T motyw · L język</span>
+</div>
+<div class="counter" id="counter"></div>
+
+<script>
+(function () {
+  var rustKeywords = "as|break|const|continue|crate|else|enum|fn|for|if|impl|in|let|loop|match|mod|move|mut|pub|ref|return|self|Self|static|struct|super|trait|type|unsafe|use|where|while|true|false";
+
+  function escapeHtml(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function wrap(className, text) {
+    return '<span class="' + className + '">' + text + "</span>";
+  }
+
+  function highlightRust(source) {
+    var pattern = new RegExp(
+      '("(?:\\\\.|[^"\\\\])*")' +
+      "|\\b(" + rustKeywords + ")\\b" +
+      "|\\b([a-z_][a-z0-9_]*!)" +
+      "|\\b([A-Z][A-Za-z0-9_]*)\\b" +
+      "|\\b(\\d+)\\b",
+      "g"
+    );
+    return source.replace(pattern, function (match, string, keyword, macro, type, number) {
+      if (string) return wrap("tok-string", string);
+      if (keyword) return wrap("tok-keyword", keyword);
+      if (macro) return wrap("tok-macro", macro);
+      if (type) return wrap("tok-type", type);
+      return wrap("tok-number", number);
+    });
+  }
+
+  function highlightToml(source) {
+    return source.split("\n").map(function (line) {
+      if (/^\s*\[.*\]\s*$/.test(line)) return wrap("tok-section", line);
+      var keyValue = line.match(/^(\s*[A-Za-z0-9_-]+)(\s*=\s*)(.*)$/);
+      if (!keyValue) return line;
+      var value = keyValue[3].replace(/("[^"]*")/g, function (s) { return wrap("tok-string", s); });
+      return wrap("tok-key", keyValue[1]) + keyValue[2] + value;
+    }).join("\n");
+  }
+
+  function highlightShell(source) {
+    return source.split("\n").map(function (line) {
+      return line.replace(/^\$ /, wrap("tok-prompt", "$ "));
+    }).join("\n");
+  }
+
+  function highlightError(source) {
+    return source.split("\n").map(function (line) {
+      if (/^error/.test(line)) return wrap("tok-error", line);
+      return line.replace(/(help: .*)$/, function (s) { return wrap("tok-help", s); });
+    }).join("\n");
+  }
+
+  var highlighters = {
+    "lang-rust": highlightRust,
+    "lang-toml": highlightToml,
+    "lang-shell": highlightShell,
+    "lang-error": highlightError
+  };
+
+  Array.prototype.forEach.call(document.querySelectorAll("pre code"), function (block) {
+    var source = escapeHtml(block.textContent);
+    Object.keys(highlighters).forEach(function (language) {
+      if (block.classList.contains(language)) source = highlighters[language](source);
+    });
+    block.innerHTML = source;
+  });
+
+  var deck = document.getElementById("deck");
+  var counter = document.getElementById("counter");
+  var progress = document.getElementById("progress");
+  var titles = { en: "Introduction to Rust", pl: "Wprowadzenie do Rusta" };
+  var slides = [];
+  var current = 0;
+  var language = "en";
+
+  function readSavedLanguage() {
+    var fromUrl = new URLSearchParams(location.search).get("lang");
+    if (fromUrl && titles[fromUrl]) return fromUrl;
+    try {
+      var saved = localStorage.getItem("slides-language");
+      if (saved && titles[saved]) return saved;
+    } catch (error) {}
+    return "en";
+  }
+
+  function setLanguage(newLanguage) {
+    language = newLanguage;
+    try { localStorage.setItem("slides-language", language); } catch (error) {}
+    document.documentElement.lang = language;
+    document.title = titles[language];
+    Array.prototype.forEach.call(document.querySelectorAll(".slides, .hint-text"), function (element) {
+      element.classList.toggle("current", element.dataset.lang === language);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".lang-switch button"), function (button) {
+      button.setAttribute("aria-pressed", String(button.dataset.lang === language));
+    });
+    slides = document.querySelectorAll('.slides[data-lang="' + language + '"] .slide');
+    show(current);
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll(".lang-switch button"), function (button) {
+    button.addEventListener("click", function () { setLanguage(button.dataset.lang); });
+  });
+
+  function readSlideFromHash() {
+    var number = parseInt(location.hash.replace("#", ""), 10);
+    if (isNaN(number)) return 0;
+    return Math.max(number - 1, 0);
+  }
+
+  function show(index) {
+    current = Math.min(Math.max(index, 0), slides.length - 1);
+    Array.prototype.forEach.call(slides, function (slide, i) {
+      slide.classList.toggle("active", i === current);
+    });
+    counter.textContent = (current + 1) + " / " + slides.length;
+    progress.style.width = ((current + 1) / slides.length * 100) + "%";
+    if (location.hash !== "#" + (current + 1)) history.replaceState(null, "", "#" + (current + 1));
+  }
+
+  function fit() {
+    var scale = Math.min(window.innerWidth / 1280, (window.innerHeight - 40) / 720);
+    deck.style.transform = "scale(" + scale + ")";
+  }
+
+  function toggleTheme() {
+    var root = document.documentElement;
+    var dark = root.dataset.theme
+      ? root.dataset.theme === "dark"
+      : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+  }
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "ArrowRight" || event.key === "PageDown" || event.key === " ") show(current + 1);
+    else if (event.key === "ArrowLeft" || event.key === "PageUp") show(current - 1);
+    else if (event.key === "Home") show(0);
+    else if (event.key === "End") show(slides.length - 1);
+    else if (event.key === "f" || event.key === "F") {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    }
+    else if (event.key === "t" || event.key === "T") toggleTheme();
+    else if (event.key === "l" || event.key === "L") setLanguage(language === "en" ? "pl" : "en");
+    else return;
+    event.preventDefault();
+  });
+
+  document.addEventListener("click", function (event) {
+    if (event.target.closest("a, button")) return;
+    if (event.clientX > window.innerWidth / 2) show(current + 1);
+    else show(current - 1);
+  });
+
+  window.addEventListener("hashchange", function () { show(readSlideFromHash()); });
+  window.addEventListener("resize", fit);
+
+  fit();
+  current = readSlideFromHash();
+  setLanguage(readSavedLanguage());
+})();
+</script>
+</body>
+</html>

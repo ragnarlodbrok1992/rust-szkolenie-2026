@@ -411,7 +411,8 @@ attempt to add with overflow</code></pre>
     <tr><th>Method</th><th>Example</th><th>Result</th></tr>
     <tr><td><code>wrapping_add</code></td><td><code>250_u8.wrapping_add(10)</code></td><td><code>4</code>: wraps around</td></tr>
     <tr><td><code>saturating_add</code></td><td><code>250_u8.saturating_add(10)</code></td><td><code>255</code>: stops at the limit</td></tr>
-    <tr><td><code>checked_add</code></td><td><code>250_u8.checked_add(10)</code></td><td>Reports that it overflowed</td></tr>
+    <tr><td><code>checked_add</code></td><td><code>250_u8.checked_add(3)</code></td><td><code>Some(253)</code>: the result fits</td></tr>
+    <tr><td><code>checked_add</code></td><td><code>250_u8.checked_add(10)</code></td><td><code>None</code>: reports the overflow</td></tr>
   </table>
   <ul class="spaced">
     <li>When overflow is expected, say so explicitly with one of these methods.</li>
@@ -1040,7 +1041,8 @@ attempt to add with overflow</code></pre>
     <tr><th>Metoda</th><th>Przykład</th><th>Wynik</th></tr>
     <tr><td><code>wrapping_add</code></td><td><code>250_u8.wrapping_add(10)</code></td><td><code>4</code>: zawija się</td></tr>
     <tr><td><code>saturating_add</code></td><td><code>250_u8.saturating_add(10)</code></td><td><code>255</code>: zatrzymuje się na granicy</td></tr>
-    <tr><td><code>checked_add</code></td><td><code>250_u8.checked_add(10)</code></td><td>Informuje, że nastąpiło przepełnienie</td></tr>
+    <tr><td><code>checked_add</code></td><td><code>250_u8.checked_add(3)</code></td><td><code>Some(253)</code>: wynik się mieści</td></tr>
+    <tr><td><code>checked_add</code></td><td><code>250_u8.checked_add(10)</code></td><td><code>None</code>: zgłasza przepełnienie</td></tr>
   </table>
   <ul class="spaced">
     <li>Jeśli przepełnienie jest spodziewane, zaznacz to jawnie jedną z tych metod.</li>

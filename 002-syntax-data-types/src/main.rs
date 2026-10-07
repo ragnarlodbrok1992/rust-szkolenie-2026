@@ -39,7 +39,8 @@ fn scalar_types() {
     let binary = 0b1111_0000;
     let byte = b'A';
     let with_suffix = 42u8;
-    println!("{decimal} {hexadecimal} {octal} {binary} {byte} {with_suffix}");
+    let thousand = 1_000_i64;
+    println!("{decimal} {hexadecimal} {octal} {binary} {byte} {with_suffix} {thousand}");
 
     let price = 2.5;
     let ratio: f32 = 0.75;
